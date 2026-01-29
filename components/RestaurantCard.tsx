@@ -1,15 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Restaurant } from "@/lib/types";
-
-const difficultyColors: Record<number, string> = {
-  5: "bg-red-600",
-  4: "bg-orange-600",
-  3: "bg-yellow-600",
-  2: "bg-green-600",
-  1: "bg-blue-600",
-};
 
 const platformColors: Record<string, string> = {
   Resy: "bg-blue-700",
@@ -36,16 +28,258 @@ function InstagramIcon() {
   );
 }
 
+function CalendarIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+      <path fillRule="evenodd" d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75Z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
+function getCalendarUrl(restaurant: Restaurant, msUntilRelease: number | null): string | null {
+  if (msUntilRelease === null) return null;
+
+  const releaseTime = parseReleaseTime(restaurant.releaseTime);
+  if (!releaseTime) return null;
+
+  // Calculate the next release date/time
+  const nextRelease = new Date(Date.now() + msUntilRelease);
+
+  // Format for Google Calendar (YYYYMMDDTHHmmssZ)
+  const formatDate = (date: Date) => {
+    return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  };
+
+  const startDate = formatDate(nextRelease);
+  // End time is 15 minutes after start (just a reminder)
+  const endDate = formatDate(new Date(nextRelease.getTime() + 15 * 60 * 1000));
+
+  const title = encodeURIComponent(`Reminder to book "${restaurant.name}"`);
+  const details = encodeURIComponent(
+    `Window: ${restaurant.bookingWindow}\nRelease: ${restaurant.releaseTime}\n\nBook on ${restaurant.platform}${restaurant.platformUrl ? `\n${restaurant.platformUrl}` : ""}`
+  );
+
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&ctz=America/New_York`;
+}
+
+function parseReleaseTime(releaseTime: string): { hours: number; minutes: number } | null {
+  // Handle "None" or empty release times
+  if (!releaseTime || releaseTime.toLowerCase() === "none") {
+    return null;
+  }
+
+  // Parse times like "10:00 AM ET", "12:00 PM (Noon) ET", "12:00 AM (Midnight) ET"
+  const match = releaseTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!match) return null;
+
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const period = match[3].toUpperCase();
+
+  if (period === "PM" && hours !== 12) {
+    hours += 12;
+  } else if (period === "AM" && hours === 12) {
+    hours = 0;
+  }
+
+  return { hours, minutes };
+}
+
+function getNextReleaseMs(
+  releaseTime: { hours: number; minutes: number },
+  releaseSchedule: string,
+  releaseDay?: string
+): number | null {
+  // Get current time in ET using Intl API
+  const now = new Date();
+  const etFormatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    weekday: "long",
+  });
+
+  const parts = etFormatter.formatToParts(now);
+  const getPart = (type: string) => parts.find((p) => p.type === type)?.value || "0";
+
+  const etHour = parseInt(getPart("hour"), 10);
+  const etMinute = parseInt(getPart("minute"), 10);
+  const etSecond = parseInt(getPart("second"), 10);
+  const etDay = getPart("weekday").toLowerCase();
+  const etDayOfMonth = parseInt(getPart("day"), 10);
+
+  // Calculate current time in minutes from midnight (ET)
+  const currentMinutesFromMidnight = etHour * 60 + etMinute;
+  const releaseMinutesFromMidnight = releaseTime.hours * 60 + releaseTime.minutes;
+
+  // Calculate milliseconds until next release
+  let msUntilRelease: number;
+
+  if (releaseSchedule === "daily") {
+    let minutesUntil = releaseMinutesFromMidnight - currentMinutesFromMidnight;
+    if (minutesUntil <= 0) {
+      // Release already happened today, calculate for tomorrow
+      minutesUntil += 24 * 60;
+    }
+    msUntilRelease = minutesUntil * 60 * 1000 - etSecond * 1000;
+  } else if (releaseSchedule === "weekly" && releaseDay) {
+    const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+    const targetDayIndex = days.indexOf(releaseDay.toLowerCase());
+    const currentDayIndex = days.indexOf(etDay);
+
+    if (targetDayIndex === -1) return null;
+
+    let daysUntil = targetDayIndex - currentDayIndex;
+
+    if (daysUntil < 0) {
+      daysUntil += 7;
+    } else if (daysUntil === 0) {
+      // Same day - check if time has passed
+      if (releaseMinutesFromMidnight <= currentMinutesFromMidnight) {
+        daysUntil = 7;
+      }
+    }
+
+    let minutesUntil = daysUntil * 24 * 60 + (releaseMinutesFromMidnight - currentMinutesFromMidnight);
+    msUntilRelease = minutesUntil * 60 * 1000 - etSecond * 1000;
+  } else if (releaseSchedule === "monthly" && releaseDay) {
+    const dayMatch = releaseDay.match(/(\d+)/);
+    if (!dayMatch) return null;
+    const targetDayOfMonth = parseInt(dayMatch[1], 10);
+
+    let daysUntil = targetDayOfMonth - etDayOfMonth;
+
+    if (daysUntil < 0) {
+      // Next month - approximate with 30 days
+      daysUntil += 30;
+    } else if (daysUntil === 0) {
+      // Same day - check if time has passed
+      if (releaseMinutesFromMidnight <= currentMinutesFromMidnight) {
+        daysUntil = 30; // Approximate
+      }
+    }
+
+    let minutesUntil = daysUntil * 24 * 60 + (releaseMinutesFromMidnight - currentMinutesFromMidnight);
+    msUntilRelease = minutesUntil * 60 * 1000 - etSecond * 1000;
+  } else if (releaseSchedule === "none") {
+    return null;
+  } else {
+    return null;
+  }
+
+  return msUntilRelease;
+}
+
+function formatCountdown(ms: number): string {
+  if (ms <= 0) return "Now!";
+
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  const remainingHours = hours % 24;
+  const remainingMinutes = minutes % 60;
+  const remainingSeconds = seconds % 60;
+
+  if (days > 0) {
+    return `${days}d ${remainingHours}h ${remainingMinutes}m`;
+  } else if (hours > 0) {
+    return `${hours}h ${remainingMinutes}m ${remainingSeconds}s`;
+  } else if (minutes > 0) {
+    return `${minutes}m ${remainingSeconds}s`;
+  } else {
+    return `${seconds}s`;
+  }
+}
+
+function useCountdown(restaurant: Restaurant): { countdown: string | null; msUntilRelease: number | null } {
+  const [countdown, setCountdown] = useState<string | null>(null);
+  const [msUntilRelease, setMsUntilRelease] = useState<number | null>(null);
+
+  useEffect(() => {
+    const releaseTime = parseReleaseTime(restaurant.releaseTime);
+    if (!releaseTime || restaurant.releaseSchedule === "none") {
+      setCountdown(null);
+      setMsUntilRelease(null);
+      return;
+    }
+
+    const updateCountdown = () => {
+      const ms = getNextReleaseMs(
+        releaseTime,
+        restaurant.releaseSchedule,
+        restaurant.releaseDay
+      );
+
+      if (ms === null) {
+        setCountdown(null);
+        setMsUntilRelease(null);
+        return;
+      }
+
+      setMsUntilRelease(ms);
+      setCountdown(formatCountdown(ms));
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+
+    return () => clearInterval(interval);
+  }, [restaurant.releaseTime, restaurant.releaseSchedule, restaurant.releaseDay]);
+
+  return { countdown, msUntilRelease };
+}
+
 export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
   const [expanded, setExpanded] = useState(false);
+  const { countdown, msUntilRelease } = useCountdown(restaurant);
+  const calendarUrl = getCalendarUrl(restaurant, msUntilRelease);
 
   return (
     <div className="bg-zinc-900 p-3 border border-zinc-700">
       <div className="flex justify-between items-start mb-1">
-        <h3 className="text-sm font-semibold text-white leading-tight">{restaurant.name}</h3>
-        <span className={`px-1.5 py-0.5 text-[10px] font-bold ${difficultyColors[restaurant.difficulty]}`}>
-          {restaurant.difficulty}/5
-        </span>
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-sm font-semibold text-white leading-tight">{restaurant.name}</h3>
+          {restaurant.website && (
+            <a
+              href={restaurant.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-zinc-500 hover:text-white"
+              title="Website"
+            >
+              <LinkIcon />
+            </a>
+          )}
+          {restaurant.instagram && (
+            <a
+              href={`https://instagram.com/${restaurant.instagram}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-zinc-500 hover:text-white"
+              title="Instagram"
+            >
+              <InstagramIcon />
+            </a>
+          )}
+        </div>
+        {calendarUrl && (
+          <a
+            href={calendarUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-zinc-500 hover:text-white"
+            title="Add reminder to calendar"
+          >
+            <CalendarIcon />
+          </a>
+        )}
       </div>
 
       <p className="text-zinc-500 text-xs mb-2">
@@ -70,30 +304,11 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
           <span className="text-zinc-500">Release</span>
           <span className="text-orange-400 font-medium">{restaurant.releaseTime}</span>
         </div>
-      </div>
-
-      <div className="flex gap-2 mb-2">
-        {restaurant.website && (
-          <a
-            href={restaurant.website}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-zinc-400 hover:text-white"
-            title="Website"
-          >
-            <LinkIcon />
-          </a>
-        )}
-        {restaurant.instagram && (
-          <a
-            href={`https://instagram.com/${restaurant.instagram}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-zinc-400 hover:text-white"
-            title="Instagram"
-          >
-            <InstagramIcon />
-          </a>
+        {countdown && (
+          <div className="flex justify-between">
+            <span className="text-zinc-500">Countdown</span>
+            <span className="text-emerald-400 font-medium font-mono">{countdown}</span>
+          </div>
         )}
       </div>
 
