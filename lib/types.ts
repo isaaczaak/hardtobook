@@ -3,7 +3,6 @@ export interface Restaurant {
   name: string;
   neighborhood: string;
   cuisine: string;
-  difficulty: 1 | 2 | 3 | 4 | 5;
   platform: "Resy" | "Tock" | "OpenTable" | "SevenRooms" | "Phone" | "Invitation Only";
   platformUrl: string | null;
   website: string | null;
@@ -17,6 +16,4 @@ export interface Restaurant {
   phoneNumber: string | null;
   tips: string[];
   signatureDish: string;
-  priceRange: "$" | "$$" | "$$$" | "$$$$";
-  lastVerified: string;
 }

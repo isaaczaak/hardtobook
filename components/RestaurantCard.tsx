@@ -85,26 +85,30 @@ function parseReleaseTime(releaseTime: string): { hours: number; minutes: number
   return { hours, minutes };
 }
 
+// Cached formatter and constants for performance
+const etFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/New_York",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+  weekday: "long",
+});
+
+const DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+const MINUTES_PER_DAY = 24 * 60;
+const MS_PER_MINUTE = 60 * 1000;
+const MS_PER_SECOND = 1000;
+
 function getNextReleaseMs(
   releaseTime: { hours: number; minutes: number },
   releaseSchedule: string,
   releaseDay?: string
 ): number | null {
-  // Get current time in ET using Intl API
-  const now = new Date();
-  const etFormatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-    weekday: "long",
-  });
-
-  const parts = etFormatter.formatToParts(now);
+  const parts = etFormatter.formatToParts(new Date());
   const getPart = (type: string) => parts.find((p) => p.type === type)?.value || "0";
 
   const etHour = parseInt(getPart("hour"), 10);
@@ -113,61 +117,37 @@ function getNextReleaseMs(
   const etDay = getPart("weekday").toLowerCase();
   const etDayOfMonth = parseInt(getPart("day"), 10);
 
-  // Calculate current time in minutes from midnight (ET)
-  const currentMinutesFromMidnight = etHour * 60 + etMinute;
-  const releaseMinutesFromMidnight = releaseTime.hours * 60 + releaseTime.minutes;
+  const currentMinutes = etHour * 60 + etMinute;
+  const releaseMinutes = releaseTime.hours * 60 + releaseTime.minutes;
 
-  // Calculate milliseconds until next release
   let msUntilRelease: number;
 
   if (releaseSchedule === "daily") {
-    let minutesUntil = releaseMinutesFromMidnight - currentMinutesFromMidnight;
-    if (minutesUntil <= 0) {
-      // Release already happened today, calculate for tomorrow
-      minutesUntil += 24 * 60;
-    }
-    msUntilRelease = minutesUntil * 60 * 1000 - etSecond * 1000;
+    let minutesUntil = releaseMinutes - currentMinutes;
+    if (minutesUntil <= 0) minutesUntil += MINUTES_PER_DAY;
+    msUntilRelease = minutesUntil * MS_PER_MINUTE - etSecond * MS_PER_SECOND;
   } else if (releaseSchedule === "weekly" && releaseDay) {
-    const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-    const targetDayIndex = days.indexOf(releaseDay.toLowerCase());
-    const currentDayIndex = days.indexOf(etDay);
-
+    const targetDayIndex = DAYS.indexOf(releaseDay.toLowerCase());
     if (targetDayIndex === -1) return null;
 
-    let daysUntil = targetDayIndex - currentDayIndex;
-
-    if (daysUntil < 0) {
+    let daysUntil = targetDayIndex - DAYS.indexOf(etDay);
+    if (daysUntil < 0 || (daysUntil === 0 && releaseMinutes <= currentMinutes)) {
       daysUntil += 7;
-    } else if (daysUntil === 0) {
-      // Same day - check if time has passed
-      if (releaseMinutesFromMidnight <= currentMinutesFromMidnight) {
-        daysUntil = 7;
-      }
     }
 
-    let minutesUntil = daysUntil * 24 * 60 + (releaseMinutesFromMidnight - currentMinutesFromMidnight);
-    msUntilRelease = minutesUntil * 60 * 1000 - etSecond * 1000;
+    const minutesUntil = daysUntil * MINUTES_PER_DAY + (releaseMinutes - currentMinutes);
+    msUntilRelease = minutesUntil * MS_PER_MINUTE - etSecond * MS_PER_SECOND;
   } else if (releaseSchedule === "monthly" && releaseDay) {
     const dayMatch = releaseDay.match(/(\d+)/);
     if (!dayMatch) return null;
-    const targetDayOfMonth = parseInt(dayMatch[1], 10);
 
-    let daysUntil = targetDayOfMonth - etDayOfMonth;
-
-    if (daysUntil < 0) {
-      // Next month - approximate with 30 days
+    let daysUntil = parseInt(dayMatch[1], 10) - etDayOfMonth;
+    if (daysUntil < 0 || (daysUntil === 0 && releaseMinutes <= currentMinutes)) {
       daysUntil += 30;
-    } else if (daysUntil === 0) {
-      // Same day - check if time has passed
-      if (releaseMinutesFromMidnight <= currentMinutesFromMidnight) {
-        daysUntil = 30; // Approximate
-      }
     }
 
-    let minutesUntil = daysUntil * 24 * 60 + (releaseMinutesFromMidnight - currentMinutesFromMidnight);
-    msUntilRelease = minutesUntil * 60 * 1000 - etSecond * 1000;
-  } else if (releaseSchedule === "none") {
-    return null;
+    const minutesUntil = daysUntil * MINUTES_PER_DAY + (releaseMinutes - currentMinutes);
+    msUntilRelease = minutesUntil * MS_PER_MINUTE - etSecond * MS_PER_SECOND;
   } else {
     return null;
   }
