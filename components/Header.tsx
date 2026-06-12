@@ -1,7 +1,9 @@
 "use client";
 
+import { buildGeneralPrompt } from "@/lib/agentPrompt";
 import { formatEtClock } from "@/lib/time";
 import { useNow } from "@/lib/useNow";
+import { CopyPromptButton } from "./CopyPromptButton";
 
 export type Mode = "drops" | "tonight" | "plan" | "spots";
 
@@ -34,18 +36,32 @@ export function Header({
             </p>
           </div>
 
-          <div className="text-right">
-            <div className="text-[10px] uppercase tracking-micro text-stone-500">
-              NYC · ET
+          <div className="flex flex-col items-end gap-2">
+            <div className="text-right">
+              <div className="text-[10px] uppercase tracking-micro text-stone-500">
+                NYC · ET
+              </div>
+              <div
+                className="font-mono tabular-nums text-lg sm:text-xl text-paper"
+                aria-label="Current New York time"
+              >
+                {now == null ? "--:--:--" : formatEtClock(now)}
+              </div>
             </div>
-            <div
-              className="font-mono tabular-nums text-lg sm:text-xl text-paper"
-              aria-label="Current New York time"
-            >
-              {now == null ? "--:--:--" : formatEtClock(now)}
-            </div>
+            <CopyPromptButton
+              text={buildGeneralPrompt()}
+              label="Copy prompt"
+              compact
+              className="hidden sm:inline-flex"
+            />
           </div>
         </div>
+        <CopyPromptButton
+          text={buildGeneralPrompt()}
+          label="Copy prompt"
+          compact
+          className="mt-3 w-full sm:hidden"
+        />
       </div>
 
       <nav aria-label="View" className="mx-auto max-w-6xl px-4">

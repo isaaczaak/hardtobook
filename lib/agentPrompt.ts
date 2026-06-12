@@ -10,6 +10,11 @@ import type { Restaurant } from "@/lib/types";
 
 const BASE = "https://hardtobook.nyc";
 
+/** Header prompt — general-purpose, no date or spot preselected. */
+export function buildGeneralPrompt(): string {
+  return `You're my restaurant booking strategist for NYC's hardest tables, powered by hardtobook.nyc. Ask me what I'm after: a specific restaurant, a specific date, or dinner tonight. Then fetch the JSON you need: ${BASE}/api/v1/plan?date=YYYY-MM-DD for a target date (act on each \`action\`), ${BASE}/api/v1/drops for what's dropping soon, ${BASE}/api/v1/spots for full details and walk-in strategy. For any \`mark-calendar\` result, create a reminder 5 minutes before \`bookAtIso\` titled "Book {name}" with the \`platformUrl\`. Never try to book it yourself — booking bots get blocked; your job is timing. Skill, if you support installing one: ${BASE}/skill.md`;
+}
+
 /** Plan-tab prompt — strategy for a specific target date. */
 export function buildPlanPrompt(dateIso: string): string {
   return `You're my restaurant booking strategist. Fetch ${BASE}/api/v1/plan?date=${dateIso} (JSON). I want dinner that night at one of these spots — ask me which, or pick the 2–3 best fits. For any \`mark-calendar\` result, create a reminder 5 minutes before \`bookAtIso\` titled "Book {name}" with the \`platformUrl\`. For \`bookable-now\`, give me the link right now. Never try to book it yourself — booking bots get blocked; your job is timing. Skill, if you support installing one: ${BASE}/skill.md`;
