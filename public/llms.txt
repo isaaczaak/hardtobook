@@ -1,0 +1,112 @@
+# hardtobook.nyc
+
+hardtobook.nyc tracks the hardest-to-book restaurants in New York City and the exact
+timing intelligence needed to land a table: when reservations drop, how far in advance
+the booking window opens, walk-in strategies, and direct deep links to the booking
+platform. We compute timing; we never automate bookings. Booking itself happens on
+Resy / Tock / OpenTable / SevenRooms / by phone. Always confirm details with the
+restaurant — release policies change.
+
+All times are America/New_York (ET). All endpoints return JSON, allow cross-origin GET,
+and wrap data in a `meta` envelope. Base URL: https://hardtobook.nyc
+
+## Endpoints
+
+### GET /api/v1/spots
+Full records for every tracked restaurant. Static, cacheable.
+
+  curl https://hardtobook.nyc/api/v1/spots
+
+  {
+    "meta": { "source": "hardtobook.nyc", "version": "v1", "count": 16,
+              "disclaimer": "Always confirm with the restaurant.",
+              "docs": "https://hardtobook.nyc/llms.txt" },
+    "spots": [ { "id": "carbone", "name": "Carbone", "platform": "Resy",
+                 "platformUrl": "https://resy.com/...", "bookingWindowDays": 30,
+                 "releaseTime": "10:00 AM ET", "releaseSchedule": "daily", ... } ]
+  }
+
+### GET /api/v1/drops
+Next upcoming reservation drop per restaurant that has a release schedule, sorted
+ascending by time. Computed per request.
+
+  curl https://hardtobook.nyc/api/v1/drops
+
+  {
+    "meta": { ... },
+    "drops": [ { "id": "four-horsemen", "name": "The Four Horsemen",
+                 "platform": "Resy", "platformUrl": "https://resy.com/...",
+                 "dropAtIso": "2026-06-13T11:00:00.000Z",
+                 "dropAtEt": "7:00 AM ET, Sat Jun 13",
+                 "secondsUntil": 50400,
+                 "becomesBookable": "tables 30 days out" } ]
+  }
+
+### GET /api/v1/plan?date=YYYY-MM-DD
+The marquee endpoint: give a target dining date, get the exact action to take per
+restaurant. `date` is required and must be today or later (else HTTP 400 with a JSON
+`error` field). Computed per request.
+
+  curl "https://hardtobook.nyc/api/v1/plan?date=2026-07-15"
+
+  {
+    "meta": { ..., "date": "2026-07-15" },
+    "plans": [ { "id": "carbone", "name": "Carbone", "action": "mark-calendar",
+                 "bookAtIso": "2026-06-15T14:00:00.000Z",
+                 "bookAtEt": "10:00 AM ET, Mon Jun 15",
+                 "platform": "Resy", "platformUrl": "https://resy.com/...",
+                 "phoneNumber": null,
+                 "advice": "Book Monday Jun 15 at 10:00 AM ET" } ]
+  }
+
+  action enum:
+    "mark-calendar"     window not yet open; book at bookAtIso/bookAtEt
+    "bookable-now"      window is already open; book immediately on the platform
+    "walk-in"           no reservations; show up (see advice for timing)
+    "call"              phone-only; call phoneNumber
+    "invitation-only"   no public access path
+
+## Field meanings (spots)
+
+  id                 stable slug, safe to use as a key
+  name               restaurant name
+  neighborhood       NYC neighborhood
+  cuisine            cuisine label
+  difficulty         1-5, how hard to book (5 = hardest)
+  priceRange         "$$".."$$$$"
+  platform           Resy | Tock | OpenTable | SevenRooms | Phone | Invitation Only | Walk-in Only
+  platformUrl        deep link to the booking page (null if none)
+  website            official site (nullable)
+  instagram          handle (nullable)
+  bookingWindow      human label, e.g. "30 days"
+  bookingWindowDays  integer days the window opens before the dining date (null if N/A)
+  releaseTime        local release clock, e.g. "10:00 AM ET" ("N/A"/"None" if none)
+  releaseSchedule    daily | weekly | monthly | none
+  releaseDay         which day/date releases land (weekly/monthly only; optional)
+  walkIns            boolean — accepts walk-ins
+  walkIn.doors       when walk-in doors open, e.g. "5:00 PM"
+  walkIn.lineBy      when to be in line, e.g. "4:15 PM"
+  walkIn.advice      walk-in strategy prose
+  phoneNumber        reservation phone (nullable)
+  tips               array of booking tips
+  signatureDish      the dish to order
+  lastVerified       ISO date this record was last checked
+
+## Disclaimer
+
+We provide timing intelligence and deep links only. We do not place reservations and
+are not affiliated with any booking platform. Release windows, times, and policies
+change without notice — always confirm with the restaurant before relying on a drop.
+
+## Agent skill
+
+An installable Agent Skill (SKILL.md) that teaches agents the full playbook — which
+endpoint to call when, how to set booking reminders, and the no-auto-booking rules —
+is served at https://hardtobook.nyc/skill.md (canonical: skills/hardtobook-nyc/SKILL.md
+in the repo). Drop it into your agent's skills directory to use hardtobook natively.
+
+## Coming soon
+
+A paid MCP server with `watch_drop` webhooks (push notifications the moment a specific
+restaurant's window opens) is in development. These free JSON endpoints are the on-ramp;
+response shapes are versioned (`/api/v1/...`) and intended to stay stable.

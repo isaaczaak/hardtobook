@@ -24,3 +24,41 @@ npm run dev
 - Tailwind CSS
 - Static JSON data (`data/restaurants.json`) — no backend
 - All Eastern-time math in `lib/time.ts` via `Intl.DateTimeFormat`, no date libraries
+
+## Agent API
+
+Free, CORS-enabled JSON endpoints so AI agents can consume the data and computed
+booking intelligence directly. All times are ET; responses use a `meta` envelope.
+Full docs for agents: [`/llms.txt`](https://hardtobook.nyc/llms.txt).
+
+### `GET /api/v1/spots`
+Full records for all tracked restaurants (static, cacheable).
+
+```bash
+curl https://hardtobook.nyc/api/v1/spots
+```
+
+### `GET /api/v1/drops`
+Next upcoming reservation drop per restaurant with a release schedule, sorted by
+time. Each entry has `dropAtIso`, `dropAtEt`, `secondsUntil`, `becomesBookable`.
+Computed per request.
+
+```bash
+curl https://hardtobook.nyc/api/v1/drops
+```
+
+### `GET /api/v1/plan?date=YYYY-MM-DD`
+Given a target dining date, returns the exact action per restaurant
+(`mark-calendar` | `bookable-now` | `walk-in` | `call` | `invitation-only`), with
+`bookAtIso`/`bookAtEt` for calendar actions. `date` is required and must be today
+or later (otherwise HTTP 400 with a JSON `error`). Computed per request.
+
+```bash
+curl "https://hardtobook.nyc/api/v1/plan?date=2026-07-15"
+```
+
+### Agent Skill
+
+An installable [Agent Skill](https://hardtobook.nyc/skill.md) teaches agents the full
+playbook (which endpoint when, reminder timing, no-auto-booking rules). Canonical copy:
+`skills/hardtobook-nyc/SKILL.md` — drop the folder into your agent's skills directory.

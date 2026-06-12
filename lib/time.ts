@@ -242,6 +242,16 @@ export function formatDropDay(dropAt: number, now: number = Date.now()): string 
   return `${WEEKDAYS_SHORT[drop.weekdayIndex]} ${MONTHS_SHORT[drop.month - 1]} ${drop.day}`;
 }
 
+/**
+ * Absolute NY day label "Mon Jun 16" for an instant — unlike formatDropDay this
+ * never collapses to "today"/"tomorrow", so it is stable for API payloads that
+ * agents may cache or display out of context.
+ */
+export function formatEtDayAbsolute(at: number): string {
+  const p = getEtParts(at);
+  return `${WEEKDAYS_SHORT[p.weekdayIndex]} ${MONTHS_SHORT[p.month - 1]} ${p.day}`;
+}
+
 /** "10:00 AM" clock label from a ParsedTime. */
 export function formatClockLabel(t: ParsedTime): string {
   const period = t.hours >= 12 ? "PM" : "AM";
