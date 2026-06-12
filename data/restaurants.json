@@ -6,11 +6,13 @@
       "neighborhood": "Greenwich Village",
       "cuisine": "Italian",
       "difficulty": 5,
+      "priceRange": "$$$$",
       "platform": "Resy",
       "platformUrl": "https://resy.com/cities/new-york-ny/venues/carbone",
       "website": "https://carbonenewyork.com",
       "instagram": "carbonenewyork",
       "bookingWindow": "30 days",
+      "bookingWindowDays": 30,
       "releaseTime": "10:00 AM ET",
       "releaseSchedule": "daily",
       "walkIns": false,
@@ -22,7 +24,6 @@
         "Set Resy notifications for cancellations"
       ],
       "signatureDish": "Spicy Rigatoni Vodka",
-      "priceRange": "$$$$",
       "lastVerified": "2025-01-29"
     },
     {
@@ -31,15 +32,20 @@
       "neighborhood": "West Village",
       "cuisine": "Italian-American",
       "difficulty": 5,
+      "priceRange": "$$$",
       "platform": "OpenTable",
       "platformUrl": "https://www.opentable.com/r/don-angie-new-york",
       "website": "https://donangie.com",
       "instagram": "donangienyc",
       "bookingWindow": "7 days",
+      "bookingWindowDays": 7,
       "releaseTime": "9:00 AM ET",
       "releaseSchedule": "daily",
       "walkIns": true,
-      "walkInTips": "Walk-in list opens at 4:30 PM sharp. Arrive early, put name down, explore the neighborhood.",
+      "walkIn": {
+        "doors": "4:30 PM",
+        "advice": "Walk-in list opens at 4:30 PM sharp; arrive early, put your name down, then explore the neighborhood. Bar seats are available for walk-ins."
+      },
       "phoneNumber": null,
       "tips": [
         "SWITCHED TO OPENTABLE MAY 2025 - no longer on Resy",
@@ -48,7 +54,6 @@
         "The Lasagna For Two is worth the effort"
       ],
       "signatureDish": "Lasagna For Two",
-      "priceRange": "$$$",
       "lastVerified": "2025-01-29"
     },
     {
@@ -57,15 +62,21 @@
       "neighborhood": "Nolita",
       "cuisine": "Italian",
       "difficulty": 5,
+      "priceRange": "$$$$",
       "platform": "Resy",
       "platformUrl": "https://resy.com/cities/new-york-ny/venues/torrisi",
       "website": "https://torrisinyc.com",
       "instagram": "torrisi.nyc",
       "bookingWindow": "30 days",
+      "bookingWindowDays": 30,
       "releaseTime": "10:00 AM ET",
       "releaseSchedule": "daily",
       "walkIns": true,
-      "walkInTips": "12-seat bar for walk-ins (parties of 1-2 only). Show up at 4:15 PM for 5 PM seating. Weeknight waits can be 4+ hours.",
+      "walkIn": {
+        "doors": "5:00 PM",
+        "lineBy": "4:15 PM",
+        "advice": "12-seat bar for walk-ins (parties of 1-2 only); show up at 4:15 PM for the 5 PM seating. Weeknight waits can be 4+ hours."
+      },
       "phoneNumber": null,
       "tips": [
         "Same release as Carbone (Major Food Group)",
@@ -73,7 +84,6 @@
         "Bar is first-come, first-served"
       ],
       "signatureDish": "Tortellini Pomodoro",
-      "priceRange": "$$$$",
       "lastVerified": "2025-01-29"
     },
     {
@@ -82,15 +92,19 @@
       "neighborhood": "West Village",
       "cuisine": "Steakhouse",
       "difficulty": 5,
+      "priceRange": "$$$$",
       "platform": "Resy",
       "platformUrl": "https://resy.com/cities/new-york-ny/venues/4-charles-prime-rib",
       "website": "https://nycprimerib.com",
       "instagram": "4charlesprimrib",
       "bookingWindow": "21 days",
+      "bookingWindowDays": 21,
       "releaseTime": "9:00 AM ET",
       "releaseSchedule": "daily",
       "walkIns": true,
-      "walkInTips": "Bar area available for walk-ins",
+      "walkIn": {
+        "advice": "Bar area is available for walk-ins."
+      },
       "phoneNumber": null,
       "tips": [
         "$5/person reservation fee charged at booking",
@@ -99,7 +113,6 @@
         "Reservations sell/trade on secondary market (against policy)"
       ],
       "signatureDish": "Prime Rib (English, Charles, or King Cut)",
-      "priceRange": "$$$$",
       "lastVerified": "2025-01-29"
     },
     {
@@ -108,11 +121,13 @@
       "neighborhood": "Midtown",
       "cuisine": "American",
       "difficulty": 5,
+      "priceRange": "$$$$",
       "platform": "Resy",
       "platformUrl": "https://resy.com/cities/new-york-ny/venues/the-polo-bar",
       "website": "https://www.ralphlauren.com/global-polo-bar",
       "instagram": "thepolobar",
       "bookingWindow": "30 days",
+      "bookingWindowDays": 30,
       "releaseTime": "10:00 AM ET",
       "releaseSchedule": "daily",
       "releaseDay": "Matching calendar date (Sept 30 for Oct 30)",
@@ -126,7 +141,6 @@
         "Pre/post theater times available on OpenTable"
       ],
       "signatureDish": "Polo Bar Burger",
-      "priceRange": "$$$$",
       "lastVerified": "2025-01-29"
     },
     {
@@ -135,11 +149,13 @@
       "neighborhood": "NoMad",
       "cuisine": "Korean Tasting Menu",
       "difficulty": 5,
+      "priceRange": "$$$$",
       "platform": "Tock",
       "platformUrl": "https://www.exploretock.com/atomixnyc",
       "website": "https://atomixnyc.com",
       "instagram": "atomixnyc",
       "bookingWindow": "1 month",
+      "bookingWindowDays": null,
       "releaseTime": "3:00 PM ET",
       "releaseSchedule": "monthly",
       "releaseDay": "1st of each month (entire month releases at once)",
@@ -152,7 +168,6 @@
         "Set calendar reminder for 1st of month at 2:55 PM"
       ],
       "signatureDish": "Multi-course Korean Tasting Menu",
-      "priceRange": "$$$$",
       "lastVerified": "2025-01-29"
     },
     {
@@ -161,15 +176,20 @@
       "neighborhood": "West Village",
       "cuisine": "Italian",
       "difficulty": 4,
+      "priceRange": "$$$",
       "platform": "Resy",
       "platformUrl": "https://resy.com/cities/new-york-ny/venues/via-carota",
       "website": "https://viacarota.com",
       "instagram": "viacarota",
       "bookingWindow": "30 days",
+      "bookingWindowDays": 30,
       "releaseTime": "10:00 AM ET",
       "releaseSchedule": "daily",
       "walkIns": true,
-      "walkInTips": "Most tables are walk-in. Arrive early (before 5 PM). Wait at Bar Pizzalino next door (same owners) - they'll text you.",
+      "walkIn": {
+        "doors": "5:00 PM",
+        "advice": "Most tables are walk-in; arrive early (before 5 PM). Wait at Bar Pizzalino next door (same owners) and they'll text you."
+      },
       "phoneNumber": null,
       "tips": [
         "Walk-ins are the primary way to dine here",
@@ -178,7 +198,6 @@
         "The cacio e pepe is legendary"
       ],
       "signatureDish": "Cacio e Pepe",
-      "priceRange": "$$$",
       "lastVerified": "2025-01-29"
     },
     {
@@ -187,15 +206,20 @@
       "neighborhood": "Williamsburg",
       "cuisine": "Italian",
       "difficulty": 4,
+      "priceRange": "$$$",
       "platform": "Resy",
       "platformUrl": "https://resy.com/cities/new-york-ny/venues/lilia",
       "website": "https://www.lilianewyork.com",
       "instagram": "lilianewyork",
       "bookingWindow": "28 days",
+      "bookingWindowDays": 28,
       "releaseTime": "10:00 AM ET",
       "releaseSchedule": "daily",
       "walkIns": true,
-      "walkInTips": "Bar, patio, and piazza seats held for walk-ins. Arrive right at 4 PM when they open. Put name down for later slot.",
+      "walkIn": {
+        "doors": "4:00 PM",
+        "advice": "Bar, patio, and piazza seats are held for walk-ins; arrive right at 4 PM when they open and put your name down for a later slot. Walk-in waits run 30 min to 3 hours."
+      },
       "phoneNumber": "718-576-3095",
       "tips": [
         "Call between 10 AM - 4 PM to speak to reservationist",
@@ -204,7 +228,6 @@
         "Walk-in waits: 30 min to 3 hours"
       ],
       "signatureDish": "Mafaldini with Pink Peppercorn",
-      "priceRange": "$$$",
       "lastVerified": "2025-01-29"
     },
     {
@@ -213,15 +236,16 @@
       "neighborhood": "East Harlem",
       "cuisine": "Italian",
       "difficulty": 5,
+      "priceRange": "$$$$",
       "platform": "Invitation Only",
       "platformUrl": null,
       "website": "https://raossince1896.com",
       "instagram": "raosrestaurants",
       "bookingWindow": "N/A",
+      "bookingWindowDays": null,
       "releaseTime": "N/A",
       "releaseSchedule": "none",
       "walkIns": false,
-      "walkInTips": "Bar is open to public. Become a regular, chat up staff, and maybe get lucky.",
       "phoneNumber": "212-722-6709",
       "tips": [
         "Tables are 'owned' by regulars and passed down through generations",
@@ -231,7 +255,6 @@
         "Call the phone number listed on website for best chance"
       ],
       "signatureDish": "Meatballs",
-      "priceRange": "$$$$",
       "lastVerified": "2025-01-29"
     },
     {
@@ -240,15 +263,19 @@
       "neighborhood": "SoHo",
       "cuisine": "American",
       "difficulty": 5,
+      "priceRange": "$$$$",
       "platform": "SevenRooms",
       "platformUrl": "https://www.thecornerstoresoho.com/#/form-reservations",
       "website": "https://www.thecornerstoresoho.com",
       "instagram": "thecornerstore",
       "bookingWindow": "14 days",
+      "bookingWindowDays": 14,
       "releaseTime": "10:00 AM ET",
       "releaseSchedule": "daily",
       "walkIns": true,
-      "walkInTips": "13-seat bar is first-come, first-served. Arrive before opening for best chance. Wait times 1-4 hours.",
+      "walkIn": {
+        "advice": "13-seat bar is first-come, first-served; arrive before opening for the best chance. Wait times run 1-4 hours."
+      },
       "phoneNumber": "212-271-9240",
       "tips": [
         "Taylor Swift effect - exploded in popularity late 2024",
@@ -258,7 +285,6 @@
         "Be ready at 9:55 AM on Resy"
       ],
       "signatureDish": "Sour Cream & Onion Martini",
-      "priceRange": "$$$$",
       "lastVerified": "2025-01-29"
     },
     {
@@ -267,15 +293,20 @@
       "neighborhood": "Upper West Side",
       "cuisine": "Afro-Caribbean",
       "difficulty": 5,
+      "priceRange": "$$$",
       "platform": "Resy",
       "platformUrl": "https://resy.com/cities/new-york-ny/venues/tatiana",
       "website": "https://tatiananyc.com",
       "instagram": "tatianabychefkwame",
       "bookingWindow": "28 days",
+      "bookingWindowDays": 28,
       "releaseTime": "12:00 PM (Noon) ET",
       "releaseSchedule": "daily",
       "walkIns": true,
-      "walkInTips": "6 bar seats + 32 patio seats for walk-ins. Arrive by 4:30 PM. Line forms early.",
+      "walkIn": {
+        "lineBy": "4:30 PM",
+        "advice": "6 bar seats plus 32 patio seats are available for walk-ins; arrive by 4:30 PM as the line forms early."
+      },
       "phoneNumber": "212-875-5222",
       "tips": [
         "#1 Restaurant in NYC (NYT 2024)",
@@ -285,7 +316,6 @@
         "Refresh Resy throughout day for cancellations"
       ],
       "signatureDish": "Curried Goat Patties",
-      "priceRange": "$$$",
       "lastVerified": "2025-01-29"
     },
     {
@@ -294,15 +324,19 @@
       "neighborhood": "Flatiron",
       "cuisine": "Korean BBQ / Steakhouse",
       "difficulty": 4,
+      "priceRange": "$$$$",
       "platform": "Resy",
       "platformUrl": "https://resy.com/cities/new-york-ny/venues/cote-nyc",
       "website": "https://www.cotekoreansteakhouse.com",
       "instagram": "cotekoreansteakhouse",
       "bookingWindow": "29 days",
+      "bookingWindowDays": 29,
       "releaseTime": "10:00 AM ET",
       "releaseSchedule": "daily",
       "walkIns": true,
-      "walkInTips": "Standing room only at bar. Undercote (downstairs bar) is walk-in only.",
+      "walkIn": {
+        "advice": "Standing room only at the bar; Undercote (the downstairs bar) is walk-in only."
+      },
       "phoneNumber": "212-401-7886",
       "tips": [
         "Better luck with parties of 4-6 (table setup)",
@@ -311,7 +345,6 @@
         "Phone reservationists available 11 AM - 10 PM daily"
       ],
       "signatureDish": "Butcher's Feast",
-      "priceRange": "$$$$",
       "lastVerified": "2025-01-29"
     },
     {
@@ -320,15 +353,19 @@
       "neighborhood": "Midtown West",
       "cuisine": "French Seafood",
       "difficulty": 4,
+      "priceRange": "$$$$",
       "platform": "Resy",
       "platformUrl": "https://resy.com/cities/ny/le-bernardin",
       "website": "https://le-bernardin.com",
       "instagram": "lebernardinny",
       "bookingWindow": "60 days",
+      "bookingWindowDays": 60,
       "releaseTime": "12:00 AM (Midnight) ET",
       "releaseSchedule": "daily",
       "walkIns": true,
-      "walkInTips": "Bar and lounge accept walk-ins for drinks and lighter fare",
+      "walkIn": {
+        "advice": "Bar and lounge accept walk-ins for drinks and lighter fare."
+      },
       "phoneNumber": "212-554-1515",
       "tips": [
         "Three Michelin stars",
@@ -338,7 +375,6 @@
         "Jacket required for men"
       ],
       "signatureDish": "Barely Cooked Salmon",
-      "priceRange": "$$$$",
       "lastVerified": "2025-01-29"
     },
     {
@@ -347,15 +383,19 @@
       "neighborhood": "Upper East Side",
       "cuisine": "French Bistro",
       "difficulty": 4,
+      "priceRange": "$$$$",
       "platform": "OpenTable",
       "platformUrl": "https://www.opentable.com/r/le-veau-dor-new-york",
       "website": "https://lvdnyc.com",
       "instagram": "leveaudor",
       "bookingWindow": "28 days",
+      "bookingWindowDays": 28,
       "releaseTime": "9:00 AM ET",
       "releaseSchedule": "daily",
       "walkIns": true,
-      "walkInTips": "5-seat bar accepts walk-ins for drinks, lunch, or dinner",
+      "walkIn": {
+        "advice": "5-seat bar accepts walk-ins for drinks, lunch, or dinner."
+      },
       "phoneNumber": "646-386-7608",
       "tips": [
         "Reopened July 2024 by Frenchette team",
@@ -365,7 +405,6 @@
         "James Beard Outstanding Restaurateur 2025"
       ],
       "signatureDish": "Poulet à l'Estragon",
-      "priceRange": "$$$$",
       "lastVerified": "2025-01-29"
     },
     {
@@ -374,15 +413,20 @@
       "neighborhood": "Williamsburg",
       "cuisine": "New American / Wine Bar",
       "difficulty": 4,
+      "priceRange": "$$$",
       "platform": "Resy",
       "platformUrl": "https://resy.com/cities/new-york-ny/venues/the-four-horsemen",
       "website": "https://fourhorsemenbk.com",
       "instagram": "fourhorsemenbk",
       "bookingWindow": "30 days",
+      "bookingWindowDays": 30,
       "releaseTime": "7:00 AM ET",
       "releaseSchedule": "daily",
       "walkIns": true,
-      "walkInTips": "Arrive at 5:30 PM opening for walk-in bar seats",
+      "walkIn": {
+        "doors": "5:30 PM",
+        "advice": "Arrive at the 5:30 PM opening for walk-in bar seats."
+      },
       "phoneNumber": null,
       "tips": [
         "Co-owned by LCD Soundsystem's James Murphy",
@@ -391,7 +435,6 @@
         "Early morning release time - set alarm for 6:55 AM"
       ],
       "signatureDish": "Seasonal Tasting Menu",
-      "priceRange": "$$$",
       "lastVerified": "2025-01-29"
     },
     {
@@ -400,15 +443,21 @@
       "neighborhood": "East Village",
       "cuisine": "French-Vietnamese",
       "difficulty": 4,
+      "priceRange": "$$$",
       "platform": "Resy",
       "platformUrl": "https://resy.com/cities/new-york-ny/venues/has-snack-bar",
       "website": null,
       "instagram": "has_dac_biet",
       "bookingWindow": "20 days",
+      "bookingWindowDays": 20,
       "releaseTime": "12:00 AM (Midnight) ET",
       "releaseSchedule": "daily",
       "walkIns": true,
-      "walkInTips": "Primarily walk-in. Line starts forming at 4:45 PM for 5:30 PM opening. Thursday at 9:30 PM quoted 4 hour wait.",
+      "walkIn": {
+        "doors": "5:30 PM",
+        "lineBy": "4:45 PM",
+        "advice": "Primarily walk-in; the line starts forming at 4:45 PM for the 5:30 PM opening. A Thursday at 9:30 PM was quoted a 4-hour wait."
+      },
       "phoneNumber": null,
       "tips": [
         "Midnight release time is unusual - set alarm",
@@ -417,7 +466,6 @@
         "Very small space - 18 seats"
       ],
       "signatureDish": "Boudin Noir",
-      "priceRange": "$$$",
       "lastVerified": "2025-01-29"
     }
   ]

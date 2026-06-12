@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "hard to book",
-  description: "Track NYC's hardest-to-book restaurants. Release times, booking tips, and strategies.",
+  title: "hard to book 🥀 — NYC reservation mission control",
+  description:
+    "Live drop countdowns, tonight's walk-in playbook, and exactly when to set your alarm for NYC's hardest reservations.",
 };
 
 export default function RootLayout({
@@ -13,7 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased bg-ink text-paper">
+        {children}
+      </body>
     </html>
   );
 }
