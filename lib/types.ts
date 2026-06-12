@@ -13,11 +13,17 @@ export interface WalkInInfo {
   advice: string;
 }
 
+export interface Coordinates {
+  lat: number;
+  lng: number;
+}
+
 export interface Restaurant {
   id: string;
   name: string;
   neighborhood: string;
   cuisine: string;
+  coordinates: Coordinates; // { lat, lng } — neighborhood-centroid accuracy
   difficulty: number; // 1-5
   priceRange: string; // "$$".."$$$$"
   platform: Platform;

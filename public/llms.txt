@@ -72,6 +72,8 @@ restaurant. `date` is required and must be today or later (else HTTP 400 with a 
   name               restaurant name
   neighborhood       NYC neighborhood
   cuisine            cuisine label
+  coordinates.lat    latitude (neighborhood-centroid accuracy; stylized, not navigational)
+  coordinates.lng    longitude (neighborhood-centroid accuracy; stylized, not navigational)
   difficulty         1-5, how hard to book (5 = hardest)
   priceRange         "$$".."$$$$"
   platform           Resy | Tock | OpenTable | SevenRooms | Phone | Invitation Only | Walk-in Only

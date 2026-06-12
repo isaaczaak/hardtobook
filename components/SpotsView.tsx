@@ -5,9 +5,11 @@ import type { Restaurant } from "@/lib/types";
 import { useNow } from "@/lib/useNow";
 import { getNextReleaseMs, parseReleaseTime } from "@/lib/time";
 import { SpotCard } from "./SpotCard";
+import { MapView } from "./MapView";
 import { MicroLabel } from "./ui";
 
 type SortKey = "difficulty" | "soonest" | "az";
+type ViewMode = "list" | "map";
 
 const selectCls =
   "w-full min-w-0 bg-stone-950 border border-stone-800 text-paper text-xs px-2 py-2 min-h-[44px] focus-visible:border-stone-500";
@@ -27,6 +29,7 @@ export function SpotsView({
   const [cuisine, setCuisine] = useState("all");
   const [platform, setPlatform] = useState("all");
   const [sort, setSort] = useState<SortKey>("difficulty");
+  const [view, setView] = useState<ViewMode>("list");
 
   const neighborhoods = useMemo(
     () => Array.from(new Set(restaurants.map((r) => r.neighborhood))).sort(),
@@ -169,11 +172,40 @@ export function SpotsView({
         </label>
       </div>
 
-      <p className="mb-4 text-[10px] uppercase tracking-micro text-stone-600">
-        {filtered.length} {filtered.length === 1 ? "spot" : "spots"}
-      </p>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <p className="text-[10px] uppercase tracking-micro text-stone-600">
+          {filtered.length} {filtered.length === 1 ? "spot" : "spots"}
+        </p>
+        <div
+          role="group"
+          aria-label="View mode"
+          className="inline-flex border border-stone-800"
+        >
+          {(["list", "map"] as const).map((mode) => {
+            const active = view === mode;
+            return (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setView(mode)}
+                aria-pressed={active}
+                className={[
+                  "px-3 py-1.5 text-[10px] uppercase tracking-micro transition-colors duration-200",
+                  active
+                    ? "bg-paper text-ink"
+                    : "text-stone-500 hover:text-paper",
+                ].join(" ")}
+              >
+                {mode}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-      {filtered.length === 0 ? (
+      {view === "map" ? (
+        <MapView restaurants={filtered} isStarred={isStarred} toggle={toggle} />
+      ) : filtered.length === 0 ? (
         <p className="py-12 text-center text-sm text-stone-500">
           Nothing matches. Loosen a filter.
         </p>
