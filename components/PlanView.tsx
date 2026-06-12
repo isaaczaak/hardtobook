@@ -17,6 +17,8 @@ import {
 } from "@/lib/calendar";
 import { StarButton } from "./StarButton";
 import { PlatformChip, MicroLabel, BookLink, GhostLink } from "./ui";
+import { CopyPromptButton } from "./CopyPromptButton";
+import { buildPlanPrompt } from "@/lib/agentPrompt";
 
 const BUCKET_ORDER: PlanBucket[] = [
   "MARK YOUR CALENDAR",
@@ -87,17 +89,20 @@ export function PlanView({
   return (
     <section aria-label="Plan">
       <div className="mb-8 border border-stone-800 p-5">
-        <label htmlFor="plan-date" className="block">
-          <MicroLabel className="block mb-2">I want a table on…</MicroLabel>
-          <input
-            id="plan-date"
-            type="date"
-            value={effectiveDate}
-            min={today ?? undefined}
-            onChange={(e) => setDate(e.target.value)}
-            className="bg-stone-950 border border-stone-800 text-paper font-mono text-base px-3 py-2.5 min-h-[44px] focus-visible:border-stone-500"
-          />
-        </label>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <label htmlFor="plan-date" className="block">
+            <MicroLabel className="block mb-2">I want a table on…</MicroLabel>
+            <input
+              id="plan-date"
+              type="date"
+              value={effectiveDate}
+              min={today ?? undefined}
+              onChange={(e) => setDate(e.target.value)}
+              className="bg-stone-950 border border-stone-800 text-paper font-mono text-base px-3 py-2.5 min-h-[44px] focus-visible:border-stone-500"
+            />
+          </label>
+          <CopyPromptButton text={buildPlanPrompt(effectiveDate)} />
+        </div>
         <p className="mt-2 text-xs text-stone-500">
           Tell us when. We&apos;ll tell you exactly when to set your alarm.
         </p>

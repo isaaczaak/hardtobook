@@ -11,6 +11,8 @@ import { Countdown } from "./Countdown";
 import { DifficultyMeter } from "./DifficultyMeter";
 import { StarButton } from "./StarButton";
 import { PlatformChip, MicroLabel, BookLink } from "./ui";
+import { CopyPromptButton } from "./CopyPromptButton";
+import { buildSpotPrompt } from "@/lib/agentPrompt";
 import { LinkIcon, InstagramIcon } from "./icons";
 
 export function SpotCard({
@@ -154,6 +156,14 @@ export function SpotCard({
               </p>
             </div>
           )}
+          <div>
+            <MicroLabel className="block mb-1.5">Hand to your agent</MicroLabel>
+            <CopyPromptButton
+              text={buildSpotPrompt(restaurant)}
+              label="COPY PROMPT"
+              compact
+            />
+          </div>
         </div>
       )}
 

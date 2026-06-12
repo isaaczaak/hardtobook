@@ -78,6 +78,29 @@ export default function Home() {
         <p className="text-[10px] uppercase tracking-micro text-stone-600">
           Times in ET. Always confirm directly with the restaurant.
         </p>
+        <p className="mt-2 text-xs text-stone-600">
+          built for agents →{" "}
+          <a
+            href="/llms.txt"
+            className="underline decoration-stone-700 underline-offset-2 transition-colors duration-200 hover:text-paper"
+          >
+            /llms.txt
+          </a>{" "}
+          ·{" "}
+          <a
+            href="/skill.md"
+            className="underline decoration-stone-700 underline-offset-2 transition-colors duration-200 hover:text-paper"
+          >
+            /skill.md
+          </a>{" "}
+          ·{" "}
+          <a
+            href="/api/v1/spots"
+            className="underline decoration-stone-700 underline-offset-2 transition-colors duration-200 hover:text-paper"
+          >
+            api
+          </a>
+        </p>
       </footer>
     </NowProvider>
   );
