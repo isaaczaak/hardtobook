@@ -10,10 +10,11 @@ import { DropsView } from "@/components/DropsView";
 import { TonightView } from "@/components/TonightView";
 import { PlanView } from "@/components/PlanView";
 import { SpotsView } from "@/components/SpotsView";
+import { MapView } from "@/components/MapView";
 
 const restaurants = (restaurantData as { restaurants: Restaurant[] }).restaurants;
 
-const MODES: Mode[] = ["drops", "tonight", "plan", "spots"];
+const MODES: Mode[] = ["drops", "tonight", "plan", "spots", "map"];
 
 function isMode(value: string | null): value is Mode {
   return value != null && (MODES as string[]).includes(value);
@@ -72,14 +73,26 @@ export default function Home() {
             toggle={watchlist.toggle}
           />
         )}
+        {mode === "map" && (
+          <MapView
+            restaurants={restaurants}
+            isStarred={watchlist.isStarred}
+            toggle={watchlist.toggle}
+          />
+        )}
       </main>
 
       <footer className="mx-auto max-w-6xl px-4 py-8 border-t border-stone-800">
+        <p className="mb-4 max-w-xl border border-stone-700 px-3 py-2 text-xs leading-relaxed text-stone-300">
+          <span className="font-medium text-paper">No booking bots.</span> This
+          is a timing tracker, not an auto-booker. It will never reserve a table
+          for you. Booking bots violate Resy/Tock/OpenTable terms.
+        </p>
         <p className="text-[10px] uppercase tracking-micro text-stone-600">
           Times in ET. Always confirm directly with the restaurant.
         </p>
         <p className="mt-2 text-xs text-stone-600">
-          built for agents →{" "}
+          for agents →{" "}
           <a
             href="/llms.txt"
             className="underline decoration-stone-700 underline-offset-2 transition-colors duration-200 hover:text-paper"
@@ -99,6 +112,16 @@ export default function Home() {
             className="underline decoration-stone-700 underline-offset-2 transition-colors duration-200 hover:text-paper"
           >
             api
+          </a>
+        </p>
+        <p className="mt-2 text-xs text-stone-600">
+          <a
+            href="https://x.com/isaaccyn"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-stone-700 underline-offset-2 transition-colors duration-200 hover:text-paper"
+          >
+            share feedback →
           </a>
         </p>
       </footer>

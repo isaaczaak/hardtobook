@@ -1,39 +1,33 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Restaurant } from "@/lib/types";
 import { useNow } from "@/lib/useNow";
-import { getNextReleaseMs, parseReleaseTime } from "@/lib/time";
-import { DifficultyMeter } from "./DifficultyMeter";
-import { StarButton } from "./StarButton";
+import {
+  getNextReleaseMs,
+  parseReleaseTime,
+  formatCountdown,
+  formatEtDayAbsolute,
+} from "@/lib/time";
 import { PlatformChip, BookLink, GhostLink, MicroLabel } from "./ui";
+import { LAND_PATHS, MAP_VIEW, projectLngLat } from "@/lib/mapGeometry";
 
 // ---------------------------------------------------------------------------
 // Projection
 //
-// A simple equirectangular projection with a latitude-corrected x-scale. NYC
-// sits at ~40.74°N where one degree of longitude is much shorter than one
-// degree of latitude; multiplying lng-extent by cos(40.74°) keeps the city
-// from looking horizontally stretched. The dots are stylized, not navigational
-// — neighborhood-centroid accuracy is all we need.
+// Dots are placed at their true lat/lng via the SHARED projection in
+// lib/mapGeometry (the same transform the NYC coastline is baked with), so the
+// dots sit on the real map. A gentle collision pass then nudges apart only the
+// dots that would otherwise overlap in dense clusters.
 // ---------------------------------------------------------------------------
-
-const LAT_REF = 40.74;
-const LNG_SCALE = Math.cos((LAT_REF * Math.PI) / 180); // ~0.758
-
-// Internal SVG units. We project lat/lng into a [0, SPAN] box (before padding)
-// then size the viewBox around it. Larger numbers give the collision pass more
-// room to nudge overlapping dots apart.
-const SPAN = 1000;
-const PAD = 90; // viewBox padding around the projected bounding box
 
 // "Dropping now" window: rose is permitted ONLY when a scheduled drop is within
 // this many ms of landing (the live moment). Everywhere else rose is forbidden.
 const LIVE_WINDOW_MS = 60_000;
 
-// Minimum centre-to-centre distance between dots, in SVG units, enforced by the
-// collision pass below. Tuned so dots stay individually tappable at render size.
-const MIN_GAP = 30;
+// Minimum centre-to-centre distance between dots, in SVG units. Kept small so
+// dots stay close to their true location while remaining individually tappable.
+const MIN_GAP = 20;
 
 interface Projected {
   r: Restaurant;
@@ -47,54 +41,26 @@ function projectRestaurants(restaurants: Restaurant[]): {
   width: number;
   height: number;
 } {
-  if (restaurants.length === 0) {
-    return { dots: [], width: SPAN + PAD * 2, height: SPAN + PAD * 2 };
-  }
-
-  const lats = restaurants.map((r) => r.coordinates.lat);
-  const lngs = restaurants.map((r) => r.coordinates.lng);
-  const latMin = Math.min(...lats);
-  const latMax = Math.max(...lats);
-  const lngMin = Math.min(...lngs);
-  const lngMax = Math.max(...lngs);
-
-  // Raw extents in "corrected degrees" so x and y share a scale.
-  const latExtent = Math.max(latMax - latMin, 1e-6);
-  const lngExtent = Math.max((lngMax - lngMin) * LNG_SCALE, 1e-6);
-  const extent = Math.max(latExtent, lngExtent);
-  const scale = SPAN / extent;
-
-  // Centre the smaller axis within the SPAN box.
-  const xOffset = (SPAN - lngExtent * scale) / 2;
-  const yOffset = (SPAN - latExtent * scale) / 2;
-
-  const dots: Projected[] = restaurants.map((r) => ({
-    r,
-    x: PAD + xOffset + (r.coordinates.lng - lngMin) * LNG_SCALE * scale,
-    // Higher latitude (north) → smaller y → top of the SVG.
-    y: PAD + yOffset + (latMax - r.coordinates.lat) * scale,
+  const dots: Projected[] = restaurants.map((r) => {
+    const { x, y } = projectLngLat(r.coordinates.lng, r.coordinates.lat);
     // Difficulty 5 reads slightly larger; everything else is a hair smaller.
-    radius: r.difficulty >= 5 ? 8 : 6.5,
-  }));
+    return { r, x, y, radius: r.difficulty >= 5 ? 7.5 : 6 };
+  });
 
   relaxCollisions(dots);
 
-  return {
-    dots,
-    width: SPAN + PAD * 2,
-    height: SPAN + PAD * 2,
-  };
+  return { dots, width: MAP_VIEW.width, height: MAP_VIEW.height };
 }
 
 /**
- * Deterministic collision relaxation. Dots in the West Village cluster (Carbone,
- * Via Carota, 4 Charles, Don Angie, Torrisi-ish) sit nearly on top of each
- * other; a few fixed-point iterations nudge any pair closer than MIN_GAP apart
- * along the line between them. Deterministic because it depends only on the
- * incoming positions — no randomness, so render is stable across reloads.
+ * Deterministic collision relaxation. Dense clusters (the West Village, the
+ * Flatiron/NoMad band) sit nearly on top of each other; a few fixed-point
+ * iterations nudge any pair closer than MIN_GAP apart along the line between
+ * them. Deterministic because it depends only on the incoming positions — no
+ * randomness, so render is stable across reloads.
  */
 function relaxCollisions(dots: Projected[]): void {
-  const ITERATIONS = 60;
+  const ITERATIONS = 80;
   for (let pass = 0; pass < ITERATIONS; pass++) {
     let moved = false;
     for (let i = 0; i < dots.length; i++) {
@@ -128,13 +94,40 @@ function relaxCollisions(dots: Projected[]): void {
   }
 }
 
-/** Is this spot in its live "dropping now" window right now? */
-function isLiveNow(r: Restaurant, now: number | null): boolean {
-  if (now == null || r.releaseSchedule === "none") return false;
+interface DropInfo {
+  hasSchedule: boolean;
+  ms: number | null; // ms until next drop (null if unknown / no schedule)
+  live: boolean;
+  dropAtMs: number | null; // absolute instant of the next drop
+}
+
+/** Next-drop facts for the flyout, derived from the shared 1s `now` tick. */
+function getDropInfo(r: Restaurant, now: number | null): DropInfo {
+  if (r.releaseSchedule === "none") {
+    return { hasSchedule: false, ms: null, live: false, dropAtMs: null };
+  }
+  if (now == null) {
+    return { hasSchedule: true, ms: null, live: false, dropAtMs: null };
+  }
   const release = parseReleaseTime(r.releaseTime);
-  if (!release) return false;
+  if (!release) {
+    return { hasSchedule: true, ms: null, live: false, dropAtMs: null };
+  }
   const ms = getNextReleaseMs(release, r.releaseSchedule, r.releaseDay, now);
-  return ms != null && ms <= LIVE_WINDOW_MS;
+  return {
+    hasSchedule: true,
+    ms,
+    live: ms != null && ms <= LIVE_WINDOW_MS,
+    dropAtMs: ms != null ? now + ms : null,
+  };
+}
+
+/** Human "books N days out" / window label for the flyout. */
+function bookingWindowLabel(r: Restaurant): string {
+  if (r.bookingWindowDays != null) {
+    return `${r.bookingWindowDays} days out`;
+  }
+  return r.bookingWindow;
 }
 
 export function MapView({
@@ -147,17 +140,33 @@ export function MapView({
   toggle: (id: string) => void;
 }) {
   const now = useNow();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Single active spot. Hover (desktop), focus (keyboard), or tap (touch) opens
+  // it; a short close delay bridges the gap between the dot and the flyout so
+  // you can move onto the flyout to click the Book link without it vanishing.
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelHide = () => {
+    if (hideTimer.current) {
+      clearTimeout(hideTimer.current);
+      hideTimer.current = null;
+    }
+  };
+  const show = (id: string) => {
+    cancelHide();
+    setActiveId(id);
+  };
+  const hideSoon = () => {
+    cancelHide();
+    hideTimer.current = setTimeout(() => setActiveId(null), 180);
+  };
 
   const { dots, width, height } = useMemo(
     () => projectRestaurants(restaurants),
     [restaurants]
   );
 
-  // Resolve selection against the current filtered set. If the selected spot
-  // was filtered out, it simply resolves to null and the panel reverts to its
-  // hint state — no stale detail panel.
-  const selected = dots.find((d) => d.r.id === selectedId)?.r ?? null;
+  const shown = dots.find((d) => d.r.id === activeId) ?? null;
 
   if (restaurants.length === 0) {
     return (
@@ -168,203 +177,302 @@ export function MapView({
   }
 
   return (
-    <div className="lg:flex lg:items-start lg:gap-4">
-      {/* Map panel */}
-      <div className="relative flex-1 border border-stone-800 bg-ink">
-        <div className="pointer-events-none absolute left-3 top-3 z-10">
-          <MicroLabel className="text-stone-600">NYC · 16 spots</MicroLabel>
-        </div>
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          className="block h-auto w-full"
-          role="group"
-          aria-label="Map of tracked restaurants. Select a dot for details."
+    <div
+      className="relative border border-stone-800 bg-ink"
+      // Tapping the map background (not a dot) dismisses the flyout.
+      onClick={() => {
+        cancelHide();
+        setActiveId(null);
+      }}
+    >
+      <div className="pointer-events-none absolute left-3 top-3 z-10">
+        <MicroLabel className="text-stone-600">
+          NYC · {restaurants.length} spots
+        </MicroLabel>
+      </div>
+      <div className="pointer-events-none absolute right-3 top-3 z-10 text-right">
+        <MicroLabel className="text-stone-700">
+          Hover or tap a dot
+        </MicroLabel>
+      </div>
+
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="block h-auto w-full"
+        role="group"
+        aria-label="Map of tracked restaurants. Hover or select a dot for details."
+      >
+        {/* Stylized geography: river strokes as negative space + a fine grid.
+            Transit-diagram abstraction, not cartography. */}
+        <MapBackground width={width} height={height} />
+
+        {/* Area micro-labels, anchored to real coordinates. */}
+        <g
+          fontSize="13"
+          letterSpacing="1.4"
+          textAnchor="middle"
+          className="fill-stone-700"
+          style={{ textTransform: "uppercase" }}
+          aria-hidden="true"
         >
-          {/* Stylized geography: river strokes as negative space + a fine grid.
-              Transit-diagram abstraction, not cartography. Coordinates are in
-              the same projected SPAN+PAD space as the dots. */}
-          <MapBackground width={width} height={height} />
-
-          {/* Area micro-labels */}
-          <g
-            fontSize="13"
-            letterSpacing="1.4"
-            className="fill-stone-700"
-            style={{ textTransform: "uppercase" }}
-            aria-hidden="true"
-          >
-            <text x={PAD + 250} y={PAD + 120}>
-              MANHATTAN
-            </text>
-            <text x={PAD + 760} y={PAD + 760}>
-              BROOKLYN
-            </text>
-            <text
-              x={PAD + 120}
-              y={PAD + 560}
-              fontSize="10"
-              className="fill-stone-800"
-            >
-              W. VILLAGE
-            </text>
-          </g>
-
-          {/* Dots */}
-          {dots.map((d) => {
-            const starred = isStarred(d.r.id);
-            const live = isLiveNow(d.r, now);
-            const isSelected = d.r.id === selectedId;
-            const fill = live
-              ? "fill-rose"
-              : starred
-                ? "fill-paper"
-                : "fill-stone-400";
+          {(
+            [
+              ["MANHATTAN", -73.984, 40.778],
+              ["BROOKLYN", -73.949, 40.682],
+              ["QUEENS", -73.927, 40.752],
+            ] as const
+          ).map(([label, lng, lat]) => {
+            const p = projectLngLat(lng, lat);
             return (
-              <g key={d.r.id}>
-                {isSelected && (
-                  <circle
-                    cx={d.x}
-                    cy={d.y}
-                    r={d.radius + 6}
-                    className="fill-none stroke-stone-500"
-                    strokeWidth={1}
-                  />
-                )}
-                {live && (
-                  <circle
-                    cx={d.x}
-                    cy={d.y}
-                    r={d.radius + 4}
-                    className="fill-none stroke-rose animate-pulse-rose"
-                    strokeWidth={1.5}
-                  />
-                )}
+              <text key={label} x={p.x} y={p.y}>
+                {label}
+              </text>
+            );
+          })}
+        </g>
+
+        {/* Dots */}
+        {dots.map((d) => {
+          const starred = isStarred(d.r.id);
+          const info = getDropInfo(d.r, now);
+          const live = info.live;
+          const isShown = d.r.id === activeId;
+          const fill = live
+            ? "fill-rose"
+            : starred
+              ? "fill-paper"
+              : "fill-stone-400";
+          return (
+            <g key={d.r.id}>
+              {isShown && (
                 <circle
                   cx={d.x}
                   cy={d.y}
-                  r={d.radius}
-                  className={`${fill} cursor-pointer transition-[r] duration-200`}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`${d.r.name}, ${d.r.neighborhood}, difficulty ${Math.round(
-                    d.r.difficulty
-                  )} of 5${live ? ", dropping now" : ""}${
-                    starred ? ", on your watchlist" : ""
-                  }`}
-                  aria-pressed={isSelected}
-                  onClick={() => setSelectedId(d.r.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      setSelectedId(d.r.id);
-                    }
-                  }}
+                  r={d.radius + 6}
+                  className="fill-none stroke-stone-500"
+                  strokeWidth={1}
                 />
-              </g>
-            );
-          })}
-        </svg>
-      </div>
+              )}
+              {live && (
+                <circle
+                  cx={d.x}
+                  cy={d.y}
+                  r={d.radius + 4}
+                  className="fill-none stroke-rose animate-pulse-rose"
+                  strokeWidth={1.5}
+                />
+              )}
+              <circle
+                cx={d.x}
+                cy={d.y}
+                r={d.radius}
+                className={`${fill} cursor-pointer transition-[r] duration-200`}
+                tabIndex={0}
+                role="button"
+                aria-label={`${d.r.name}, ${d.r.neighborhood}, ${d.r.cuisine}${
+                  live ? ", dropping now" : ""
+                }${starred ? ", on your watchlist" : ""}`}
+                aria-pressed={isShown}
+                onMouseEnter={() => show(d.r.id)}
+                onMouseLeave={hideSoon}
+                onFocus={() => show(d.r.id)}
+                onBlur={hideSoon}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  show(d.r.id);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    show(d.r.id);
+                  }
+                }}
+              />
+            </g>
+          );
+        })}
+      </svg>
 
-      {/* Detail panel — floats beside the map on desktop, drops under it on
-          mobile. Never clipped: it lives outside the SVG entirely. */}
-      <div className="mt-3 lg:mt-0 lg:w-72 lg:flex-shrink-0">
-        {selected ? (
-          <MapDetailPanel
-            restaurant={selected}
-            starred={isStarred(selected.id)}
-            live={isLiveNow(selected, now)}
-            onToggle={toggle}
-            onClose={() => setSelectedId(null)}
-          />
-        ) : (
-          <div className="border border-stone-800 p-4">
-            <MicroLabel className="block">Detail</MicroLabel>
-            <p className="mt-2 text-xs text-stone-500">
-              Select a dot to see booking intel. Larger dots are difficulty 5.
-              Starred spots fill paper-white.
-            </p>
-          </div>
-        )}
-      </div>
+      {/* Flyout — HTML overlay anchored to the dot via percentage coordinates so
+          it tracks the dot at any render size. Lives outside the SVG so its type
+          renders crisply and it can host real links when pinned. */}
+      {shown && (
+        <MapFlyout
+          dot={shown}
+          width={width}
+          height={height}
+          now={now}
+          starred={isStarred(shown.r.id)}
+          onToggleStar={toggle}
+          onPointerKeep={() => cancelHide()}
+          onPointerLeave={hideSoon}
+          onClose={() => {
+            cancelHide();
+            setActiveId(null);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function MapDetailPanel({
-  restaurant,
+function MapFlyout({
+  dot,
+  width,
+  height,
+  now,
   starred,
-  live,
-  onToggle,
+  onToggleStar,
+  onPointerKeep,
+  onPointerLeave,
   onClose,
 }: {
-  restaurant: Restaurant;
+  dot: Projected;
+  width: number;
+  height: number;
+  now: number | null;
   starred: boolean;
-  live: boolean;
-  onToggle: (id: string) => void;
+  onToggleStar: (id: string) => void;
+  onPointerKeep: () => void;
+  onPointerLeave: () => void;
   onClose: () => void;
 }) {
+  const r = dot.r;
+  const info = getDropInfo(r, now);
+
+  const leftPct = (dot.x / width) * 100;
+  const topPct = (dot.y / height) * 100;
+
+  // Flip below when near the top edge; align toward the dot when near a side
+  // edge — so the box never spills outside the map.
+  const flipBelow = topPct < 26;
+  const vertical = flipBelow ? "top-full mt-2" : "bottom-full mb-2";
+  const horizontal =
+    leftPct < 28
+      ? "left-0"
+      : leftPct > 72
+        ? "right-0"
+        : "left-1/2 -translate-x-1/2";
+
   const directionsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    `${restaurant.name} ${restaurant.neighborhood} NYC`
+    `${r.name} ${r.neighborhood} NYC`
   )}`;
 
   return (
-    <article className="border border-stone-800 p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold leading-tight text-paper">
-            {restaurant.name}
-          </h3>
-          <p className="mt-0.5 text-xs text-stone-500">
-            {restaurant.neighborhood} · {restaurant.cuisine}
-          </p>
-        </div>
-        <StarButton
-          id={restaurant.id}
-          name={restaurant.name}
-          starred={starred}
-          onToggle={onToggle}
-        />
-      </div>
-
-      {live && (
-        <p className="mt-2 inline-block border border-rose/60 px-1.5 py-0.5 text-[10px] uppercase tracking-micro text-rose">
-          Dropping now
-        </p>
-      )}
-
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <PlatformChip platform={restaurant.platform} />
-        <DifficultyMeter difficulty={restaurant.difficulty} />
-      </div>
-
-      <div className="mt-4 flex flex-col gap-2">
-        {restaurant.platformUrl && (
-          <BookLink href={restaurant.platformUrl} full>
-            Book on {restaurant.platform}
-          </BookLink>
-        )}
-        <GhostLink href={directionsUrl}>Directions</GhostLink>
-      </div>
-
-      <button
-        type="button"
-        onClick={onClose}
-        className="mt-3 text-[10px] uppercase tracking-micro text-stone-600 transition-colors duration-200 hover:text-paper"
+    <div
+      className="pointer-events-none absolute z-20"
+      style={{ left: `${leftPct}%`, top: `${topPct}%` }}
+    >
+      <article
+        className={[
+          "pointer-events-auto absolute w-52 border border-stone-700 bg-ink p-3",
+          vertical,
+          horizontal,
+        ].join(" ")}
+        // Keep the flyout open while the pointer is over it, and stop clicks from
+        // bubbling to the map's background dismiss handler.
+        onMouseEnter={onPointerKeep}
+        onMouseLeave={onPointerLeave}
+        onClick={(e) => e.stopPropagation()}
       >
-        Close
-      </button>
-    </article>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="truncate text-sm font-semibold leading-tight text-paper">
+              {r.name}
+            </h3>
+            <p className="mt-0.5 truncate text-[11px] text-stone-500">
+              {r.neighborhood} · {r.cuisine}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="-mr-1 -mt-1 px-1 text-stone-600 transition-colors duration-200 hover:text-paper"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Countdown block */}
+        <div className="mt-3 border-t border-stone-800 pt-2">
+          {info.live ? (
+            <>
+              <MicroLabel className="block text-rose">Dropping now</MicroLabel>
+              <p className="mt-0.5 font-mono text-base tabular-nums text-rose">
+                LIVE
+              </p>
+            </>
+          ) : info.hasSchedule ? (
+            <>
+              <MicroLabel className="block">Drops in</MicroLabel>
+              <p className="mt-0.5 font-mono text-base tabular-nums text-paper">
+                {info.ms != null ? formatCountdown(info.ms) : "--:--:--"}
+              </p>
+            </>
+          ) : (
+            <>
+              <MicroLabel className="block">Reservations</MicroLabel>
+              <p className="mt-0.5 text-xs text-stone-400">No scheduled drop.</p>
+            </>
+          )}
+        </div>
+
+        {/* Concrete next-drop date + time, and the booking window. */}
+        {info.hasSchedule && (
+          <dl className="mt-2 space-y-1 text-[11px]">
+            {info.dropAtMs != null && (
+              <div className="flex items-baseline justify-between gap-2">
+                <dt className="text-stone-600">Next drop</dt>
+                <dd className="font-mono tabular-nums text-stone-300">
+                  {formatEtDayAbsolute(info.dropAtMs)} · {r.releaseTime}
+                </dd>
+              </div>
+            )}
+            <div className="flex items-baseline justify-between gap-2">
+              <dt className="text-stone-600">Books</dt>
+              <dd className="text-stone-300">{bookingWindowLabel(r)}</dd>
+            </div>
+          </dl>
+        )}
+
+        {/* Booking actions — always present so the CTA is one move away. */}
+        <div className="mt-3 flex flex-col gap-2 border-t border-stone-800 pt-3">
+          <div className="flex items-center justify-between gap-2">
+            <PlatformChip platform={r.platform} />
+            <button
+              type="button"
+              onClick={() => onToggleStar(r.id)}
+              className="text-[10px] uppercase tracking-micro text-stone-500 transition-colors duration-200 hover:text-paper"
+              aria-pressed={starred}
+            >
+              {starred ? "★ Watching" : "☆ Watch"}
+            </button>
+          </div>
+          {r.platformUrl ? (
+            <BookLink href={r.platformUrl} full>
+              Book on {r.platform}
+            </BookLink>
+          ) : (
+            <span className="border border-stone-800 px-3 py-2 text-center text-[10px] uppercase tracking-micro text-stone-600">
+              {r.platform}
+            </span>
+          )}
+          <GhostLink href={directionsUrl}>Directions</GhostLink>
+        </div>
+      </article>
+    </div>
   );
 }
 
 /**
- * Abstract geography. Two soft polyline strokes suggest the Hudson (west) and
- * the East River bend separating Manhattan from Brooklyn, over a faint dotted
- * grid. Thin stone strokes on ink — negative space does the work, no fills.
+ * Real, minimal NYC geography. The water is the ink background; land masses
+ * (Manhattan, Brooklyn, Queens, the Bronx) are drawn as a faint fill with a 1px
+ * stone coastline, so the Hudson and East River read as negative space. Paths
+ * are pre-projected in lib/mapGeometry with the same transform as the dots. A
+ * very faint dotted grid keeps the departures-board "instrument" texture.
  */
 function MapBackground({ width, height }: { width: number; height: number }) {
-  // Fine dotted grid across the whole viewBox.
   const step = 80;
   const lines: React.ReactNode[] = [];
   for (let x = step; x < width; x += step) {
@@ -377,7 +485,7 @@ function MapBackground({ width, height }: { width: number; height: number }) {
         y2={height}
         className="stroke-stone-900"
         strokeWidth={0.5}
-        strokeDasharray="1 7"
+        strokeDasharray="1 9"
       />
     );
   }
@@ -391,7 +499,7 @@ function MapBackground({ width, height }: { width: number; height: number }) {
         y2={y}
         className="stroke-stone-900"
         strokeWidth={0.5}
-        strokeDasharray="1 7"
+        strokeDasharray="1 9"
       />
     );
   }
@@ -399,22 +507,15 @@ function MapBackground({ width, height }: { width: number; height: number }) {
   return (
     <g aria-hidden="true">
       {lines}
-      {/* Hudson — a near-vertical sweep down the west edge of Manhattan. */}
-      <path
-        d={`M ${width * 0.16} ${height * 0.04}
-            C ${width * 0.2} ${height * 0.3}, ${width * 0.12} ${height * 0.55}, ${width * 0.22} ${height * 0.82}`}
-        className="fill-none stroke-stone-800"
-        strokeWidth={1}
-        strokeLinecap="round"
-      />
-      {/* East River — bends southeast, dividing Manhattan from Brooklyn. */}
-      <path
-        d={`M ${width * 0.58} ${height * 0.04}
-            C ${width * 0.6} ${height * 0.34}, ${width * 0.72} ${height * 0.5}, ${width * 0.62} ${height * 0.92}`}
-        className="fill-none stroke-stone-800"
-        strokeWidth={1}
-        strokeLinecap="round"
-      />
+      {LAND_PATHS.map((p, i) => (
+        <path
+          key={i}
+          d={p.d}
+          className="fill-stone-900/70 stroke-stone-700"
+          strokeWidth={1}
+          strokeLinejoin="round"
+        />
+      ))}
     </g>
   );
 }

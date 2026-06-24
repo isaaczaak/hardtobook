@@ -148,7 +148,44 @@ export function getNextReleaseMs(
     return minutesUntil * MS_PER_MINUTE - secondsRemainder;
   }
 
+  // calendar-month (e.g. EMP/Per Se): the whole next month opens on the 1st.
+  // The drop instant is the next 1st-of-month at the release time.
+  if (releaseSchedule === "calendar-month") {
+    return msUntilNextMonthlyOccurrence([1], release, now);
+  }
+
+  // twice-monthly (e.g. Ramen by Ra): drops on the 1st and the 15th.
+  if (releaseSchedule === "twice-monthly") {
+    return msUntilNextMonthlyOccurrence([1, 15], release, now);
+  }
+
   return null;
+}
+
+/**
+ * Ms from `now` until the next occurrence of any `daysOfMonth` (e.g. [1] or
+ * [1,15]) at the release time-of-day, computed on the real NY calendar so it
+ * respects variable month lengths and DST. Looks ahead through next month,
+ * which is sufficient since the smallest cadence here is twice a month.
+ */
+function msUntilNextMonthlyOccurrence(
+  daysOfMonth: number[],
+  release: ParsedTime,
+  now: number
+): number | null {
+  const p = getEtParts(now);
+  const months = [
+    { y: p.year, m: p.month },
+    { y: p.month === 12 ? p.year + 1 : p.year, m: p.month === 12 ? 1 : p.month + 1 },
+  ];
+  let best = Infinity;
+  for (const { y, m } of months) {
+    for (const d of daysOfMonth) {
+      const t = etDateTimeToMs(y, m, d, release.hours, release.minutes);
+      if (t > now && t < best) best = t;
+    }
+  }
+  return best === Infinity ? null : best - now;
 }
 
 /** Format a positive ms duration into a compact countdown string. */
@@ -377,6 +414,23 @@ export function computePlan(
     };
   }
 
+  // Monthly-rule releases (calendar-month, twice-monthly) don't use a fixed
+  // day window — derive the exact book moment from the rule itself.
+  if (
+    releaseSchedule === "calendar-month" ||
+    releaseSchedule === "twice-monthly"
+  ) {
+    const ruleRelease = parseReleaseTime(restaurant.releaseTime);
+    if (ruleRelease) {
+      const bookAtMs = bookMomentForMonthlyRule(
+        releaseSchedule,
+        targetDate,
+        ruleRelease
+      );
+      return buildScheduledPlanResult(restaurant, bookAtMs, now);
+    }
+  }
+
   const release = parseReleaseTime(restaurant.releaseTime);
   const W = restaurant.bookingWindowDays;
 
@@ -417,6 +471,49 @@ export function computePlan(
     );
   }
 
+  return buildScheduledPlanResult(restaurant, bookAtMs, now);
+}
+
+/**
+ * The exact instant to book for a monthly-rule release, given a target dining
+ * date. `calendar-month`: the whole target month opens on the 1st of the prior
+ * month. `twice-monthly`: dates on/after the 16th open on the 1st of that month;
+ * dates on/before the 15th open on the 15th of the prior month.
+ */
+function bookMomentForMonthlyRule(
+  schedule: "calendar-month" | "twice-monthly",
+  target: { year: number; month: number; day: number },
+  release: ParsedTime
+): number {
+  if (schedule === "calendar-month") {
+    let y = target.year;
+    let m = target.month - 1;
+    if (m < 1) {
+      m = 12;
+      y -= 1;
+    }
+    return etDateTimeToMs(y, m, 1, release.hours, release.minutes);
+  }
+
+  // twice-monthly
+  if (target.day >= 16) {
+    return etDateTimeToMs(target.year, target.month, 1, release.hours, release.minutes);
+  }
+  let y = target.year;
+  let m = target.month - 1;
+  if (m < 1) {
+    m = 12;
+    y -= 1;
+  }
+  return etDateTimeToMs(y, m, 15, release.hours, release.minutes);
+}
+
+/** Shared PLAN result for any computed book instant (BOOKABLE NOW vs MARK YOUR CALENDAR). */
+function buildScheduledPlanResult(
+  restaurant: Restaurant,
+  bookAtMs: number,
+  now: number
+): PlanResult {
   if (bookAtMs <= now) {
     return {
       restaurant,
@@ -444,7 +541,7 @@ export function computePlan(
 function earliestScheduledRelease(
   fromInput: string,
   release: ParsedTime,
-  schedule: "weekly" | "monthly",
+  schedule: Restaurant["releaseSchedule"],
   releaseDay: string | undefined
 ): number {
   const from = parseDateInput(fromInput)!;

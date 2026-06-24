@@ -7,6 +7,7 @@ import { useNotifications } from "@/lib/useNotifications";
 import {
   computeUpcomingDrops,
   formatDropDay,
+  formatEtDayAbsolute,
   type UpcomingDrop,
 } from "@/lib/time";
 import { Countdown } from "./Countdown";
@@ -14,6 +15,20 @@ import { StarButton } from "./StarButton";
 import { PlatformChip, MicroLabel, BookLink } from "./ui";
 
 const LIVE_WINDOW_MS = 5 * 60 * 1000; // "dropping now" lasts 5 minutes.
+const MS_PER_DAY = 86_400_000;
+
+/**
+ * "Tables for {date} · {window} out" — the concrete dining date that opens when
+ * this drop fires (drop instant + booking window), so the relative "28 days out"
+ * is paired with an actual calendar date. Falls back to just the window label
+ * for monthly-rule releases where no single day count applies.
+ */
+function tablesLine(drop: UpcomingDrop): string {
+  const r = drop.restaurant;
+  if (r.bookingWindowDays == null) return `Tables for ${r.bookingWindow} out`;
+  const date = formatEtDayAbsolute(drop.dropAtMs + r.bookingWindowDays * MS_PER_DAY);
+  return `Tables for ${date} · ${r.bookingWindow} out`;
+}
 
 export function DropsView({
   restaurants,
@@ -208,7 +223,7 @@ function Hero({
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <PlatformChip platform={r.platform} />
         <span className="text-xs text-stone-400">
-          Tables for {r.bookingWindow} out · {r.releaseTime}
+          {tablesLine(drop)} · {r.releaseTime}
         </span>
       </div>
 
@@ -240,7 +255,7 @@ function DroppingNow({
           </span>
           <h2 className="mt-1 text-lg font-semibold text-paper">{r.name}</h2>
           <p className="mt-0.5 text-xs text-stone-400">
-            Tables for {r.bookingWindow} out are live.
+            {tablesLine(drop)} are live.
           </p>
         </div>
         <StarButton id={r.id} name={r.name} starred={starred} onToggle={onToggle} />
@@ -282,7 +297,7 @@ function QueueRow({
         </div>
         <div className="mt-0.5 truncate text-sm text-paper">{r.name}</div>
         <div className="text-[10px] uppercase tracking-micro text-stone-600">
-          Tables for {r.bookingWindow} out
+          {tablesLine(drop)}
         </div>
       </div>
 

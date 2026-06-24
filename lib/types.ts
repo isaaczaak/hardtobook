@@ -33,7 +33,13 @@ export interface Restaurant {
   bookingWindow: string; // human label "30 days"
   bookingWindowDays: number | null;
   releaseTime: string; // "10:00 AM ET" or "None"
-  releaseSchedule: "daily" | "weekly" | "monthly" | "none";
+  releaseSchedule:
+    | "daily"
+    | "weekly"
+    | "monthly"
+    | "calendar-month"
+    | "twice-monthly"
+    | "none";
   releaseDay?: string;
   walkIns: boolean;
   walkIn?: WalkInInfo;
