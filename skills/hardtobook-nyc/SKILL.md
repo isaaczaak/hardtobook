@@ -17,9 +17,9 @@ Full field reference: `https://hardtobook.nyc/llms.txt`
 
 1. **"I want to eat at X on DATE"** → `GET /api/v1/plan?date=YYYY-MM-DD`, find the spot
    by `id`/`name`, then act on `action`:
-   - `mark-calendar` — the window isn't open yet. Create a calendar reminder/alarm for
-     the human at `bookAtIso` **minus 5 minutes**, titled "Book {name} — table for {date}",
-     with `platformUrl` in the body. Tell them seconds matter at the drop.
+   - `mark-calendar` — the window isn't open yet. Set a reminder in the operator's own
+     tools per **Setting reminders** below (default: a heads-up the night before plus a
+     final alarm at `bookAtIso` minus 5 minutes). Tell them seconds matter at the drop.
    - `bookable-now` — the window is open. Send them `platformUrl` immediately; tables for
      that date may already be gone, so also suggest the walk-in/cancellation fallback.
    - `walk-in` — no reservations. Relay the `advice` (doors/line times).
@@ -34,6 +34,41 @@ Full field reference: `https://hardtobook.nyc/llms.txt`
    and `becomesBookable` (how far out the released tables are).
 4. **Browsing / "somewhere Italian in the Village"** → `GET /api/v1/spots`, filter on
    `neighborhood` / `cuisine` / `difficulty` / `priceRange`.
+
+## Setting reminders
+
+Your highest-value move: put a reminder into the **operator's own tools** so they're at the
+keyboard the second tables drop. hardtobook stores nothing and sends nothing — you set the
+reminder where the operator already lives (their reminders/calendar/to-do app), then they
+make the click.
+
+**Capture preferences once, then reuse them** (don't re-ask every time). Before the first
+reminder, establish and remember:
+
+- **Tool** — where the reminder goes: the operator's reminders or to-do app, a calendar event
+  (an `.ics`/Google Calendar event is the safe default), an email-to-self, or a push. Use
+  whatever you can actually write to in their environment.
+- **Lead time** — how early. Default to **two nudges**: a heads-up the evening before (or the
+  morning of), and a final alarm at `bookAtIso` minus 5 minutes. Honour overrides like
+  "just 10 minutes before" or "only the final one".
+- **Scope** — which spots to auto-remind for: everything they're planning, only difficulty
+  ≥ 4, or a named watchlist they give you.
+- **Midnight drops** — many windows open at 12:00 AM ET. Confirm whether they want the
+  late-night ping or to skip those.
+- **Timezone** — drops are ET. Schedule from the UTC `*Iso` fields and convert the alarm into
+  the operator's local time so the clock on their device is correct.
+
+**To set a reminder** (for a `mark-calendar` result, or any `drops` entry they care about):
+
+- **Title:** `Book {name} — table for {date}`
+- **Time(s):** `bookAtIso` (UTC) minus each chosen lead time
+- **Body:** the `platformUrl`, plus "be logged in beforehand; refresh at the top of the second"
+- **Recurring spots:** for `calendar-month`, `twice-monthly`, or `weekly` releases, set a
+  RECURRING reminder anchored to the rule (e.g. the 1st & 15th at 9:00 AM ET) instead of a
+  one-off, so it keeps firing each cycle.
+
+Then confirm in one line what you scheduled, and tell them they can change lead time, tool, or
+scope anytime.
 
 ## Rules
 
