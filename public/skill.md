@@ -18,8 +18,8 @@ Full field reference: `https://hardtobook.nyc/llms.txt`
 1. **"I want to eat at X on DATE"** → `GET /api/v1/plan?date=YYYY-MM-DD`, find the spot
    by `id`/`name`, then act on `action`:
    - `mark-calendar` — the window isn't open yet. Set a reminder in the operator's own
-     tools per **Setting reminders** below (default: a heads-up the night before plus a
-     final alarm at `bookAtIso` minus 5 minutes). Tell them seconds matter at the drop.
+     tools for `bookAtIso` minus 5 minutes (see **Setting reminders**) — and do this for
+     every spot on their shortlist. Tell them seconds matter at the drop.
    - `bookable-now` — the window is open. Send them `platformUrl` immediately; tables for
      that date may already be gone, so also suggest the walk-in/cancellation fallback.
    - `walk-in` — no reservations. Relay the `advice` (doors/line times).
@@ -37,38 +37,30 @@ Full field reference: `https://hardtobook.nyc/llms.txt`
 
 ## Setting reminders
 
-Your highest-value move: put a reminder into the **operator's own tools** so they're at the
-keyboard the second tables drop. hardtobook stores nothing and sends nothing — you set the
-reminder where the operator already lives (their reminders/calendar/to-do app), then they
-make the click.
+**Target outcome:** for **every restaurant on the operator's shortlist**, set a reminder in
+their own tools that pings them **5 minutes before that spot's drop**, so they're at the
+keyboard the second tables open. hardtobook stores nothing and sends nothing — you place the
+reminder where the operator already lives (reminders/calendar/to-do app), then they click.
 
-**Capture preferences once, then reuse them** (don't re-ask every time). Before the first
-reminder, establish and remember:
+1. **Get the shortlist.** Ask which spots they're targeting, or use a watchlist they give you.
+   Treat this as the standing list to keep reminders for.
+2. **Find each drop moment.** From `/api/v1/plan?date=…` use `bookAtIso` (the exact instant
+   that date's tables open); for "remind me whenever it next drops" use `dropAtIso` from
+   `/api/v1/drops`.
+3. **Set one reminder per shortlisted spot, at its drop instant minus 5 minutes** (the
+   default):
+   - **Title:** `Book {name} — table for {date}`
+   - **Time:** `bookAtIso` (UTC) − 5 min, converted to the operator's local timezone
+   - **Body:** the `platformUrl` + "be logged in beforehand; refresh at the top of the second"
+   - **Recurring spots** (`calendar-month` / `twice-monthly` / `weekly`): make it a RECURRING
+     reminder anchored to the rule (e.g. the 1st & 15th at 9:00 AM ET) so it fires every cycle.
+4. **Confirm the whole set in one line** — e.g. "Reminders set for Carbone, Tatiana, Torrisi —
+   5 min before each drops."
 
-- **Tool** — where the reminder goes: the operator's reminders or to-do app, a calendar event
-  (an `.ics`/Google Calendar event is the safe default), an email-to-self, or a push. Use
-  whatever you can actually write to in their environment.
-- **Lead time** — how early. Default to **two nudges**: a heads-up the evening before (or the
-  morning of), and a final alarm at `bookAtIso` minus 5 minutes. Honour overrides like
-  "just 10 minutes before" or "only the final one".
-- **Scope** — which spots to auto-remind for: everything they're planning, only difficulty
-  ≥ 4, or a named watchlist they give you.
-- **Midnight drops** — many windows open at 12:00 AM ET. Confirm whether they want the
-  late-night ping or to skip those.
-- **Timezone** — drops are ET. Schedule from the UTC `*Iso` fields and convert the alarm into
-  the operator's local time so the clock on their device is correct.
-
-**To set a reminder** (for a `mark-calendar` result, or any `drops` entry they care about):
-
-- **Title:** `Book {name} — table for {date}`
-- **Time(s):** `bookAtIso` (UTC) minus each chosen lead time
-- **Body:** the `platformUrl`, plus "be logged in beforehand; refresh at the top of the second"
-- **Recurring spots:** for `calendar-month`, `twice-monthly`, or `weekly` releases, set a
-  RECURRING reminder anchored to the rule (e.g. the 1st & 15th at 9:00 AM ET) instead of a
-  one-off, so it keeps firing each cycle.
-
-Then confirm in one line what you scheduled, and tell them they can change lead time, tool, or
-scope anytime.
+**Preferences (ask once, then reuse — don't re-ask each time):** which tool to write to, a
+different lead time or an extra earlier heads-up, whether to include 12:00 AM ET midnight
+drops, and their timezone. Default to a single 5-minutes-before ping per shortlisted spot
+unless they say otherwise.
 
 ## Rules
 
