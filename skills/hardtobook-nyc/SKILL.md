@@ -1,17 +1,17 @@
 ---
 name: hardtobook-nyc
-description: Get humans into NYC's hardest-to-book restaurants. Use when the user wants a reservation, table, or walk-in plan at a hard-to-book NYC spot (Carbone, 4 Charles, Tatiana, Don Angie, etc.), asks when reservations "drop," or wants a booking strategy for a specific date or for tonight. Provides drop times, booking windows, walk-in playbooks, and deep links via the free hardtobook.nyc JSON API.
+description: Get humans into NYC's hardest-to-book restaurants. Use when the user wants a reservation, table, or walk-in plan at a hard-to-book NYC spot (Carbone, 4 Charles, Tatiana, Don Angie, etc.), asks when reservations "drop," or wants a booking strategy for a specific date or for tonight. Provides drop times, booking windows, walk-in playbooks, and deep links via the free hardtobook.xyz JSON API.
 ---
 
-# hardtobook.nyc — NYC reservation timing intelligence
+# hardtobook.xyz — NYC reservation timing intelligence
 
-hardtobook.nyc tracks NYC's hardest reservations and computes the exact moment to act.
+hardtobook.xyz tracks NYC's hardest reservations and computes the exact moment to act.
 You (the agent) do the planning with this API; the human does the final booking click.
 **Never automate the booking itself** — reservation platforms prohibit bots, and this
 skill's job is timing, not clicking.
 
-Base URL: `https://hardtobook.nyc` · All times ET · JSON, CORS-open, no auth.
-Full field reference: `https://hardtobook.nyc/llms.txt`
+Base URL: `https://www.hardtobook.xyz` · All times ET · JSON, CORS-open, no auth.
+Full field reference: `https://www.hardtobook.xyz/llms.txt`
 
 ## Decision tree
 
@@ -79,7 +79,7 @@ unless they say otherwise.
 ## Example
 
 User: "anniversary dinner at 4 Charles on July 3"
-→ `GET https://hardtobook.nyc/api/v1/plan?date=2026-07-03` → 4 Charles returns
+→ `GET https://www.hardtobook.xyz/api/v1/plan?date=2026-07-03` → 4 Charles returns
 `action: "mark-calendar"`, `bookAtEt: "9:00 AM ET, Fri Jun 12"` → create a calendar
 event at 8:55 AM ET that day with the Resy deep link, and warn: be logged into Resy,
 refresh at 9:00:00 sharp.

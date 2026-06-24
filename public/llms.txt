@@ -1,6 +1,6 @@
-# hardtobook.nyc
+# hardtobook.xyz
 
-hardtobook.nyc tracks the hardest-to-book restaurants in New York City and the exact
+hardtobook.xyz tracks the hardest-to-book restaurants in New York City and the exact
 timing intelligence needed to land a table: when reservations drop, how far in advance
 the booking window opens, walk-in strategies, and direct deep links to the booking
 platform. We compute timing; we never automate bookings. Booking itself happens on
@@ -8,19 +8,19 @@ Resy / Tock / OpenTable / SevenRooms / by phone. Always confirm details with the
 restaurant — release policies change.
 
 All times are America/New_York (ET). All endpoints return JSON, allow cross-origin GET,
-and wrap data in a `meta` envelope. Base URL: https://hardtobook.nyc
+and wrap data in a `meta` envelope. Base URL: https://www.hardtobook.xyz
 
 ## Endpoints
 
 ### GET /api/v1/spots
 Full records for every tracked restaurant. Static, cacheable.
 
-  curl https://hardtobook.nyc/api/v1/spots
+  curl https://www.hardtobook.xyz/api/v1/spots
 
   {
-    "meta": { "source": "hardtobook.nyc", "version": "v1", "count": 16,
+    "meta": { "source": "hardtobook.xyz", "version": "v1", "count": 96,
               "disclaimer": "Always confirm with the restaurant.",
-              "docs": "https://hardtobook.nyc/llms.txt" },
+              "docs": "https://www.hardtobook.xyz/llms.txt" },
     "spots": [ { "id": "carbone", "name": "Carbone", "platform": "Resy",
                  "platformUrl": "https://resy.com/...", "bookingWindowDays": 30,
                  "releaseTime": "10:00 AM ET", "releaseSchedule": "daily", ... } ]
@@ -30,7 +30,7 @@ Full records for every tracked restaurant. Static, cacheable.
 Next upcoming reservation drop per restaurant that has a release schedule, sorted
 ascending by time. Computed per request.
 
-  curl https://hardtobook.nyc/api/v1/drops
+  curl https://www.hardtobook.xyz/api/v1/drops
 
   {
     "meta": { ... },
@@ -47,7 +47,7 @@ The marquee endpoint: give a target dining date, get the exact action to take pe
 restaurant. `date` is required and must be today or later (else HTTP 400 with a JSON
 `error` field). Computed per request.
 
-  curl "https://hardtobook.nyc/api/v1/plan?date=2026-07-15"
+  curl "https://www.hardtobook.xyz/api/v1/plan?date=2026-07-15"
 
   {
     "meta": { ..., "date": "2026-07-15" },
@@ -104,7 +104,7 @@ change without notice — always confirm with the restaurant before relying on a
 
 An installable Agent Skill (SKILL.md) that teaches agents the full playbook — which
 endpoint to call when, how to set booking reminders, and the no-auto-booking rules —
-is served at https://hardtobook.nyc/skill.md (canonical: skills/hardtobook-nyc/SKILL.md
+is served at https://www.hardtobook.xyz/skill.md (canonical: skills/hardtobook-nyc/SKILL.md
 in the repo). Drop it into your agent's skills directory to use hardtobook natively.
 
 ## Coming soon

@@ -89,7 +89,7 @@ export function buildIcs(input: CalendarInput): string {
   const dtStart = toUtcStamp(bookAtMs);
   const dtEnd = toUtcStamp(bookAtMs + 15 * 60 * 1000);
   const dtStamp = toUtcStamp(Date.now());
-  const uid = `htb-${restaurant.id}-${bookAtMs}@hardtobook.nyc`;
+  const uid = `htb-${restaurant.id}-${bookAtMs}@hardtobook.xyz`;
 
   const lines = [
     "BEGIN:VCALENDAR",

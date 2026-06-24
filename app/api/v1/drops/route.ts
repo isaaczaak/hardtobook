@@ -65,11 +65,11 @@ export function GET(): NextResponse {
   return NextResponse.json(
     {
       meta: {
-        source: "hardtobook.nyc",
+        source: "hardtobook.xyz",
         version: "v1",
         count: payload.length,
         disclaimer: "Always confirm with the restaurant.",
-        docs: "https://hardtobook.nyc/llms.txt",
+        docs: "https://www.hardtobook.xyz/llms.txt",
       },
       drops: payload,
     },

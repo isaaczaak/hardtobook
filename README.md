@@ -29,13 +29,13 @@ npm run dev
 
 Free, CORS-enabled JSON endpoints so AI agents can consume the data and computed
 booking intelligence directly. All times are ET; responses use a `meta` envelope.
-Full docs for agents: [`/llms.txt`](https://hardtobook.nyc/llms.txt).
+Full docs for agents: [`/llms.txt`](https://www.hardtobook.xyz/llms.txt).
 
 ### `GET /api/v1/spots`
 Full records for all tracked restaurants (static, cacheable).
 
 ```bash
-curl https://hardtobook.nyc/api/v1/spots
+curl https://www.hardtobook.xyz/api/v1/spots
 ```
 
 ### `GET /api/v1/drops`
@@ -44,7 +44,7 @@ time. Each entry has `dropAtIso`, `dropAtEt`, `secondsUntil`, `becomesBookable`.
 Computed per request.
 
 ```bash
-curl https://hardtobook.nyc/api/v1/drops
+curl https://www.hardtobook.xyz/api/v1/drops
 ```
 
 ### `GET /api/v1/plan?date=YYYY-MM-DD`
@@ -54,11 +54,11 @@ Given a target dining date, returns the exact action per restaurant
 or later (otherwise HTTP 400 with a JSON `error`). Computed per request.
 
 ```bash
-curl "https://hardtobook.nyc/api/v1/plan?date=2026-07-15"
+curl "https://www.hardtobook.xyz/api/v1/plan?date=2026-07-15"
 ```
 
 ### Agent Skill
 
-An installable [Agent Skill](https://hardtobook.nyc/skill.md) teaches agents the full
+An installable [Agent Skill](https://www.hardtobook.xyz/skill.md) teaches agents the full
 playbook (which endpoint when, reminder timing, no-auto-booking rules). Canonical copy:
 `skills/hardtobook-nyc/SKILL.md` — drop the folder into your agent's skills directory.

@@ -47,10 +47,10 @@ function errorResponse(status: number, message: string): NextResponse {
   return NextResponse.json(
     {
       meta: {
-        source: "hardtobook.nyc",
+        source: "hardtobook.xyz",
         version: "v1",
         disclaimer: "Always confirm with the restaurant.",
-        docs: "https://hardtobook.nyc/llms.txt",
+        docs: "https://www.hardtobook.xyz/llms.txt",
       },
       error: message,
     },
@@ -137,12 +137,12 @@ export function GET(request: NextRequest): NextResponse {
   return NextResponse.json(
     {
       meta: {
-        source: "hardtobook.nyc",
+        source: "hardtobook.xyz",
         version: "v1",
         count: plans.length,
         date: normalized,
         disclaimer: "Always confirm with the restaurant.",
-        docs: "https://hardtobook.nyc/llms.txt",
+        docs: "https://www.hardtobook.xyz/llms.txt",
       },
       plans,
     },

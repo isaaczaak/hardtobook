@@ -4,15 +4,15 @@ import type { Restaurant } from "@/lib/types";
  * Pure prompt builders for the "copy agent prompt" CTAs.
  *
  * These produce ready-to-paste prompts for a visitor's own AI agent
- * (Claude / ChatGPT). They always reference canonical https://hardtobook.nyc
+ * (Claude / ChatGPT). They always reference canonical https://www.hardtobook.xyz
  * URLs so the agent can fetch live JSON regardless of where it runs.
  */
 
-const BASE = "https://hardtobook.nyc";
+const BASE = "https://www.hardtobook.xyz";
 
 /** Header prompt — general-purpose, no date or spot preselected. */
 export function buildGeneralPrompt(): string {
-  return `You're my restaurant booking strategist for NYC's hardest tables, powered by hardtobook.nyc. Ask me what I'm after: a specific restaurant, a specific date, or dinner tonight. Then fetch the JSON you need: ${BASE}/api/v1/plan?date=YYYY-MM-DD for a target date (act on each \`action\`), ${BASE}/api/v1/drops for what's dropping soon, ${BASE}/api/v1/spots for full details and walk-in strategy. For every spot on my shortlist with a \`mark-calendar\` result, set a reminder in my own tools 5 minutes before its \`bookAtIso\`, titled "Book {name}" with the \`platformUrl\` (ask once if I want a different lead time or which app to use). Never try to book it yourself — booking bots get blocked; your job is timing. Skill, if you support installing one: ${BASE}/skill.md`;
+  return `You're my restaurant booking strategist for NYC's hardest tables, powered by hardtobook.xyz. Ask me what I'm after: a specific restaurant, a specific date, or dinner tonight. Then fetch the JSON you need: ${BASE}/api/v1/plan?date=YYYY-MM-DD for a target date (act on each \`action\`), ${BASE}/api/v1/drops for what's dropping soon, ${BASE}/api/v1/spots for full details and walk-in strategy. For every spot on my shortlist with a \`mark-calendar\` result, set a reminder in my own tools 5 minutes before its \`bookAtIso\`, titled "Book {name}" with the \`platformUrl\` (ask once if I want a different lead time or which app to use). Never try to book it yourself — booking bots get blocked; your job is timing. Skill, if you support installing one: ${BASE}/skill.md`;
 }
 
 /** Plan-tab prompt — strategy for a specific target date. */
