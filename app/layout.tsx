@@ -3,6 +3,7 @@ import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.hardtobook.xyz"),
   title: "hard to book 🥀 — NYC reservation mission control",
   description:
     "Live drop countdowns, tonight's walk-in playbook, and exactly when to set your alarm for NYC's hardest reservations.",
